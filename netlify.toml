@@ -1,0 +1,17 @@
+# Netlify build config for BlueIsles (Next.js).
+# The Next.js runtime is auto-installed by Netlify; declaring the plugin here
+# just makes the setup explicit and version-controlled.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Pin a Node version Next.js 16 supports (local dev uses 24).
+  NODE_VERSION = "22"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Env vars (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+# SUPABASE_SERVICE_ROLE_KEY) are set in the Netlify UI, not committed here.
