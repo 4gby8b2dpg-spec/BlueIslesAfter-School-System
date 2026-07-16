@@ -40,6 +40,12 @@ export const NAV: NavItem[] = [
     blurb: "Build surveys, target audiences, and read per-question results with pre/post pairing.",
   },
   {
+    href: "/analytics",
+    label: "Analytics",
+    title: "Analytics Explorer",
+    blurb: "Slice any metric by program, site, or grade — the numbers behind the dashboard.",
+  },
+  {
     href: "/reports",
     label: "Reports",
     title: "Reports",
