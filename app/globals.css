@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* Base tokens for the *application* screens (Tailwind side).
+   The marketing landing route ships its own self-contained stylesheet
+   (app/(marketing)/marketing.css) and owns body/typography there. */
+:root {
+  --background: #f4f7f6;
+  --foreground: #14201f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}

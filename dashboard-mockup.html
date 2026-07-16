@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- Without this, phones assume a 980px virtual viewport and the breakpoints below never fire. -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beacon — Program Dashboard</title>
+<style>
+  /* Single light theme by design decision — the product commits to one visual world.
+     The data-theme selectors below hold the page light even if a host stamps a dark preference. */
+  :root,
+  :root[data-theme="dark"],
+  :root[data-theme="light"]{
+    color-scheme:light;
+    /* Ink ramp: every step verified >= 4.5:1 on --card for small text (WCAG AA). */
+    --surface:#F4F7F6; --card:#FFFFFF; --ink:#182A2B; --muted:#4A5C5A; --faint:#637875;
+    --border:#DFE7E5; --accent:#0D9488; --accent-ink:#0B6E66; --accent2:#D97706;
+    --good:#2E7D45; --warn:#B45309; --crit:#B3261E;
+    --warn-bg:#FBF3E6; --crit-bg:#FBEBEA; --info-bg:#EAF4F2;
+    --s1:#0D9488; --s2:#D97706;
+    /* Sequential ramp, monotonic light -> dark. seq4 carries white 11px labels, so it clears 4.5:1. */
+    --seq1:#BFE6E0; --seq2:#8FD3CA; --seq3:#54B8AC; --seq4:#1B8378; --seq5:#0B6E66;
+    --grid:#E7EDEB; --shadow:0 1px 2px rgba(24,42,43,.06),0 4px 14px rgba(24,42,43,.05);
+    --radius:10px;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--surface); color:var(--ink);
+    font-family:"Avenir Next","Segoe UI Variable","Segoe UI",system-ui,-apple-system,sans-serif;
+    font-size:14px; line-height:1.45;
+  }
+  a{color:var(--accent-ink); text-decoration:none}
+  a:hover{text-decoration:underline}
+  button{font:inherit; cursor:pointer}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+  .num{font-variant-numeric:tabular-nums}
+
+  .app{display:grid; grid-template-columns:216px 1fr; min-height:100vh}
+
+  /* ---------- sidebar ---------- */
+  .side{background:var(--card); border-right:1px solid var(--border); padding:18px 12px; display:flex; flex-direction:column; gap:2px}
+  .brand{display:flex; align-items:center; gap:10px; padding:4px 10px 16px}
+  .brand-mark{width:28px; height:28px; border-radius:8px; background:var(--accent); color:#fff; display:grid; place-items:center; font-weight:700; font-size:15px}
+  .brand-name{font-weight:700; font-size:16px; letter-spacing:.01em}
+  .brand-sub{font-size:10.5px; color:var(--faint); text-transform:uppercase; letter-spacing:.09em; display:block; margin-top:1px}
+  .nav-item{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; color:var(--muted); font-weight:500}
+  .nav-item svg{flex:none; opacity:.85}
+  .nav-item:hover{background:var(--surface); color:var(--ink); text-decoration:none}
+  .nav-item.active{background:var(--info-bg); color:var(--accent-ink); font-weight:600}
+  .nav-item .pin{margin-left:auto; background:var(--crit); color:#fff; font-size:10.5px; font-weight:700; border-radius:99px; padding:1px 7px}
+  .side-foot{margin-top:auto; padding:10px; font-size:11.5px; color:var(--faint)}
+
+  /* ---------- top bar ---------- */
+  .main{display:flex; flex-direction:column; min-width:0}
+  .topbar{display:flex; align-items:center; gap:10px; padding:12px 24px; background:var(--card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:5}
+  .switch{display:flex; align-items:center; gap:6px; border:1px solid var(--border); border-radius:8px; padding:6px 10px; background:var(--card); color:var(--ink); font-weight:500}
+  .switch small{color:var(--faint); font-weight:600; text-transform:uppercase; font-size:9.5px; letter-spacing:.08em}
+  .search{flex:1; max-width:360px; display:flex; align-items:center; gap:8px; border:1px solid var(--border); border-radius:8px; padding:6px 12px; color:var(--faint); background:var(--card); text-align:left}
+  .search:hover{border-color:var(--faint); color:var(--muted)}
+  .top-right{margin-left:auto; display:flex; align-items:center; gap:12px}
+  .bell{position:relative; border:1px solid var(--border); background:var(--card); border-radius:8px; width:34px; height:34px; display:grid; place-items:center; color:var(--muted)}
+  .bell::after{content:"4"; position:absolute; top:-6px; right:-6px; background:var(--crit); color:#fff; font-size:10px; font-weight:700; border-radius:99px; padding:1px 5px}
+  .avatar{width:34px; height:34px; border-radius:99px; background:var(--accent2); color:#fff; display:grid; place-items:center; font-weight:700; font-size:13px}
+
+  /* ---------- content ---------- */
+  .content{padding:22px 24px 40px; display:flex; flex-direction:column; gap:18px; max-width:1280px; width:100%}
+  .page-head{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
+  h1{font-size:20px; margin:0; font-weight:700; letter-spacing:-.01em; text-wrap:balance}
+  .page-head .date{color:var(--muted)}
+  .fresh{margin-left:auto; font-size:12px; color:var(--faint)}
+
+  .kpis{display:grid; grid-template-columns:repeat(5,1fr); gap:12px}
+  .kpi{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px 16px}
+  .kpi .label{font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted)}
+  .kpi .value{font-size:26px; font-weight:700; letter-spacing:-.02em; margin-top:4px}
+  .kpi .delta{font-size:12px; margin-top:2px; color:var(--muted)}
+  .delta .up{color:var(--good); font-weight:600}
+  .delta .down{color:var(--crit); font-weight:600}
+  .kpi.risk{border-color:color-mix(in srgb,var(--warn) 45%,var(--border)); background:var(--warn-bg)}
+  .kpi.risk .value{color:var(--warn)}
+
+  .grid{display:grid; grid-template-columns:1fr 320px; gap:18px; align-items:start}
+  .col{display:flex; flex-direction:column; gap:18px; min-width:0}
+
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px}
+  .card h2{font-size:14px; font-weight:700; margin:0}
+  .card-head{display:flex; align-items:center; gap:10px; margin-bottom:12px}
+  .card-head .sub{color:var(--faint); font-size:12px}
+  .card-head .more{margin-left:auto; font-size:12.5px; font-weight:600}
+
+  .legend{display:flex; gap:14px; font-size:12px; color:var(--muted); margin-bottom:6px}
+  .legend .chip{display:inline-flex; align-items:center; gap:6px}
+  .legend .swatch{width:10px; height:10px; border-radius:3px}
+
+  .chart-wrap{position:relative}
+  svg text{font-family:inherit}
+
+  /* bars */
+  .bar-row{display:grid; grid-template-columns:118px 1fr 84px; align-items:center; gap:10px; padding:5px 0; border-radius:6px}
+  .bar-row:hover{background:var(--surface)}
+  .bar-row .name{font-size:12.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .track{position:relative; height:14px; background:var(--surface); border-radius:4px}
+  .bar-row:hover .track{background:var(--border)}
+  .fill{position:absolute; inset:0 auto 0 0; background:var(--s1); border-radius:2px 4px 4px 2px}
+  /* At-capacity is a status, so it wears the status color — never --accent2, which is the
+     Northgate series identity in the trend chart above. */
+  .fill.full{background:var(--warn)}
+  .cap{position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--faint); border-radius:1px}
+  .bar-row .val{font-size:12px; color:var(--muted); text-align:right}
+  .bar-note{font-size:11.5px; color:var(--faint); margin-top:8px}
+  .bar-note .tickmark{display:inline-block; width:2px; height:10px; background:var(--faint); vertical-align:-1px; margin:0 3px}
+
+  /* distribution strip */
+  .dist{display:flex; height:26px; border-radius:6px; overflow:hidden; gap:2px; background:var(--surface)}
+  /* flex-basis:0 so width tracks response count only, not the label text inside. */
+  .dist div{display:grid; place-items:center; font-size:11px; font-weight:600; color:#fff; min-width:14px; flex-basis:0}
+  .dist .d1{background:var(--seq1); color:var(--ink)}
+  .dist .d2{background:var(--seq2); color:var(--ink)}
+  .dist .d3{background:var(--seq3); color:var(--ink)}
+  .dist .d4{background:var(--seq4)}
+  .dist .d5{background:var(--seq5)}
+  .dist-labels{display:flex; justify-content:space-between; font-size:11px; color:var(--faint); margin-top:6px}
+  .pulse-line{display:flex; align-items:baseline; gap:8px; margin-bottom:10px}
+  .pulse-line .big{font-size:24px; font-weight:700}
+
+  /* right rail */
+  .alert{display:flex; gap:10px; padding:10px 12px; border-radius:8px; margin-bottom:8px; font-size:13px; align-items:flex-start}
+  .alert:last-child{margin-bottom:0}
+  .alert .ico{flex:none; font-weight:800; width:18px; height:18px; border-radius:99px; display:grid; place-items:center; font-size:11px; color:#fff; margin-top:1px}
+  .alert.crit{background:var(--crit-bg)} .alert.crit .ico{background:var(--crit)}
+  .alert.warn{background:var(--warn-bg)} .alert.warn .ico{background:var(--warn)}
+  .alert.info{background:var(--info-bg)} .alert.info .ico{background:var(--accent)}
+  .alert b{font-weight:600}
+  .alert .go{display:block; margin-top:2px; font-size:12px; font-weight:600}
+
+  .sched{list-style:none; margin:0; padding:0}
+  .sched li{display:grid; grid-template-columns:44px 1fr auto; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); align-items:baseline}
+  .sched li:last-child{border-bottom:none}
+  .sched .t{font-weight:700; font-size:12.5px}
+  .sched .what b{display:block; font-weight:600}
+  .sched .what small{color:var(--faint)}
+  .sched .room{font-size:11.5px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:2px 8px}
+
+  .imports{list-style:none; margin:0; padding:0; font-size:12.5px}
+  .imports li{display:flex; gap:8px; padding:7px 0; border-bottom:1px solid var(--border); align-items:baseline}
+  .imports li:last-child{border-bottom:none}
+  .imports .ok{color:var(--good); font-weight:700}
+  .imports .part{color:var(--warn); font-weight:700}
+  .imports .meta{margin-left:auto; color:var(--faint); font-size:11.5px; white-space:nowrap}
+
+  details.data-table{margin-top:10px; font-size:12.5px}
+  details.data-table summary{cursor:pointer; color:var(--accent-ink); font-weight:600; font-size:12.5px}
+  details.data-table .scroll{overflow-x:auto; margin-top:8px}
+  details.data-table table{border-collapse:collapse; width:100%; min-width:520px}
+  details.data-table th,details.data-table td{border:1px solid var(--border); padding:4px 8px; text-align:right}
+  details.data-table th:first-child,details.data-table td:first-child{text-align:left}
+
+  .tooltip{position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--card);
+    border-radius:8px; padding:8px 10px; font-size:12px; box-shadow:var(--shadow); opacity:0; transition:opacity .12s; max-width:240px}
+  .tooltip.show{opacity:1}
+  .tooltip .tt-title{font-weight:700; margin-bottom:3px}
+  .tooltip .row{display:flex; align-items:center; gap:6px}
+  .tooltip .sw{width:8px; height:8px; border-radius:2px}
+  @media (prefers-reduced-motion:reduce){ .tooltip{transition:none} }
+
+  @media (max-width:1060px){ .kpis{grid-template-columns:repeat(3,1fr)} .grid{grid-template-columns:1fr} }
+  @media (max-width:760px){
+    .app{grid-template-columns:1fr}
+    .side{flex-direction:row; align-items:center; overflow-x:auto; border-right:none; border-bottom:1px solid var(--border); padding:10px 12px}
+    .brand{padding:0 8px 0 0} .brand-sub,.side-foot{display:none}
+    .nav-item{white-space:nowrap}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .search{display:none}
+    .bar-row{grid-template-columns:96px 1fr 76px}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="side" aria-label="Primary">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">B</div>
+      <div><span class="brand-name">Beacon</span><span class="brand-sub">After-School Intelligence</span></div>
+    </div>
+    <a class="nav-item active" href="#" aria-current="page"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1"/><rect x="9" y="9" width="5.5" height="5.5" rx="1"/></svg>Dashboard</a>
+    <a class="nav-item" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2v8m0 0l-3-3m3 3l3-3M2.5 11v2a1 1 0 001 1h9a1 1 0 001-1v-2"/></svg>Data Import</a>
+    <a class="nav-item" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="5.5" cy="5" r="2.4"/><circle cx="11" cy="6" r="1.9"/><path d="M1.8 13.4c.5-2.3 2-3.5 3.7-3.5s3.2 1.2 3.7 3.5M9.9 10.3c1.9-.4 3.6.7 4.1 3.1"/></svg>Participants</a>
+    <a class="nav-item" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2.5 3.5h11v9h-11zM2.5 6.5h11M5.5 3.5v9"/></svg>Programs</a>
+    <a class="nav-item" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2.5 8.5l3.5 3.5 7.5-7.5"/></svg>Attendance<span class="pin">3</span></a>
+    <a class="nav-item" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg>Calendar</a>
+    <a class="nav-item" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 2.5h10v11l-2.5-2H3z"/><path d="M5.5 6h5M5.5 8.5h3"/></svg>Surveys</a>
+    <a class="nav-item" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2.5 13.5v-4M6.5 13.5v-7M10.5 13.5v-5M14 13.5V3.5"/></svg>Reports</a>
+    <a class="nav-item" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M12.4 3.6L11 5M5 11l-1.4 1.4"/></svg>Settings</a>
+    <div class="side-foot">Signed in as Program Director<br>Eastside &amp; Northgate</div>
+  </nav>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="switch" type="button"><small>Site</small> All sites ▾</button>
+      <button class="switch" type="button"><small>Term</small> Summer 2026 ▾</button>
+      <button class="search" type="button">⌕&nbsp; Search participants, programs…</button>
+      <div class="top-right">
+        <button class="bell" type="button" aria-label="Notifications, 4 unread"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2a4 4 0 00-4 4c0 3-1.2 4-1.2 4h10.4S12 9 12 6a4 4 0 00-4-4zM6.8 13a1.3 1.3 0 002.4 0"/></svg></button>
+        <div class="avatar" role="img" aria-label="Marlon Richards">MR</div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="page-head">
+        <h1>Good afternoon — here's how programs are doing</h1>
+        <span class="date">Wednesday, July 15, 2026</span>
+        <span class="fresh">Data current as of 2:05 PM</span>
+      </div>
+
+      <section class="kpis" aria-label="Key metrics">
+        <div class="kpi"><div class="label">Active enrollment</div><div class="value num">342</div><div class="delta num"><span class="up">▲ 12</span> vs. last 4 weeks</div></div>
+        <div class="kpi"><div class="label">Attendance rate · 4 wk</div><div class="value num">87.4%</div><div class="delta num"><span class="up">▲ 1.2 pts</span> vs. prior 4 weeks</div></div>
+        <div class="kpi"><div class="label">Sessions this week</div><div class="value num">46</div><div class="delta num">44 staffed · <a href="#">2 unassigned</a></div></div>
+        <div class="kpi"><div class="label">Survey response rate</div><div class="value num">68%</div><div class="delta num">82 of 120 · Summer satisfaction</div></div>
+        <div class="kpi risk"><div class="label">Students at risk</div><div class="value num">14</div><div class="delta num"><span class="down">▲ 3</span> chronic-absence flags · <a href="#">review</a></div></div>
+      </section>
+
+      <div class="grid">
+        <div class="col">
+          <section class="card">
+            <div class="card-head">
+              <h2>Attendance rate by site</h2><span class="sub">weekly, last 8 weeks</span>
+              <a class="more" href="#">Open in Explorer →</a>
+            </div>
+            <div class="legend" aria-hidden="true">
+              <span class="chip"><span class="swatch" style="background:var(--s1)"></span>Eastside</span>
+              <span class="chip"><span class="swatch" style="background:var(--s2)"></span>Northgate</span>
+            </div>
+            <div class="chart-wrap"><svg id="trend" viewBox="0 0 640 240" width="100%" role="img" aria-label="Line chart: weekly attendance rate for Eastside and Northgate over eight weeks. Eastside rises from 84 to 90 percent; Northgate rises from 78 to 85 percent."></svg></div>
+            <details class="data-table">
+              <summary>View as table</summary>
+              <div class="scroll"><table id="trend-table"></table></div>
+            </details>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2>Enrollment vs. capacity</h2><span class="sub">by program · Summer 2026</span>
+              <a class="more" href="#">All programs →</a>
+            </div>
+            <div id="bars"></div>
+            <div class="bar-note">Bar = enrolled · <span class="tickmark"></span> = capacity · orange = at capacity, waitlist forming</div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2>Survey pulse — “How much do you enjoy the program?”</h2><span class="sub">82 responses</span>
+              <a class="more" href="#">Full results →</a>
+            </div>
+            <div class="pulse-line"><span class="big num">4.2</span><span style="color:var(--muted)">average rating out of 5 · <span class="up num" style="color:var(--good);font-weight:600">▲ 0.3</span> vs. spring term</span></div>
+            <div class="dist" id="dist" role="img" aria-label="Rating distribution: one 1-star, three 2-star, ten 3-star, thirty-two 4-star, thirty-six 5-star responses."></div>
+            <div class="dist-labels"><span>1 — not at all</span><span>5 — love it</span></div>
+          </section>
+        </div>
+
+        <div class="col">
+          <section class="card">
+            <div class="card-head"><h2>Needs attention</h2></div>
+            <div class="alert crit"><span class="ico" aria-hidden="true">!</span><div><b>3 sessions missing attendance</b> — older than 24 hours (Homework Help ×2, Art Studio ×1)<a class="go" href="#">Record now →</a></div></div>
+            <div class="alert warn"><span class="ico" aria-hidden="true">!</span><div><b>Robotics Club over ratio</b> — 16 : 1 vs. 12 : 1 target since Monday<a class="go" href="#">Adjust staffing →</a></div></div>
+            <div class="alert warn"><span class="ico" aria-hidden="true">!</span><div><b>Soccer waitlist growing</b> — all 60 seats filled, 5 students waiting<a class="go" href="#">Manage waitlist →</a></div></div>
+            <div class="alert info"><span class="ico" aria-hidden="true">i</span><div><b>14 chronic-absence flags open</b> — 6 new this week, mostly grade 6–7<a class="go" href="#">Review students →</a></div></div>
+          </section>
+
+          <section class="card">
+            <div class="card-head"><h2>Today</h2><span class="sub">Wed · Jul 15</span><a class="more" href="#">Calendar →</a></div>
+            <ul class="sched">
+              <li><span class="t num">3:30</span><span class="what"><b>Homework Help</b><small>J. Ortiz · 28 expected</small></span><span class="room">Rm 104</span></li>
+              <li><span class="t num">3:30</span><span class="what"><b>Robotics Club</b><small>D. Kim · 16 expected</small></span><span class="room">STEM Lab</span></li>
+              <li><span class="t num">4:15</span><span class="what"><b>Soccer</b><small>A. Reyes · 30 expected</small></span><span class="room">Field</span></li>
+              <li><span class="t num">5:00</span><span class="what"><b>Art Studio</b><small>L. Chen · 18 expected</small></span><span class="room">Rm 12</span></li>
+            </ul>
+          </section>
+
+          <section class="card">
+            <div class="card-head"><h2>Recent imports</h2><a class="more" href="#">Import Center →</a></div>
+            <ul class="imports">
+              <li><span class="ok">✓</span> june_attendance.xlsx — 1,204 rows <span class="meta num">Jul 12</span></li>
+              <li><span class="ok">✓</span> summer_roster.csv — 214 rows <span class="meta num">Jul 8</span></li>
+              <li><span class="part">◐</span> survey_responses.csv — 3 rows skipped <span class="meta num">Jul 2</span></li>
+            </ul>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Decorative: rewritten on every mousemove, so it must NOT be a live region or a screen
+     reader would announce continuously while the pointer crosses a chart. The same numbers are
+     reachable via each chart's aria-label, the visible labels, and the "View as table" panel. -->
+<div class="tooltip" id="tt" aria-hidden="true"></div>
+
+<script>
+(function(){
+  const weeks = ["May 25","Jun 1","Jun 8","Jun 15","Jun 22","Jun 29","Jul 6","Jul 13"];
+  const series = [
+    {name:"Eastside",  color:"var(--s1)", vals:[84,86,83,88,87,89,88,90]},
+    {name:"Northgate", color:"var(--s2)", vals:[78,80,82,79,83,84,86,85]}
+  ];
+  const svg = document.getElementById("trend");
+  const NS = "http://www.w3.org/2000/svg";
+  const W=640,H=240, m={t:14,r:96,b:30,l:40};
+  const iw=W-m.l-m.r, ih=H-m.t-m.b, y0=74, y1=94;
+  const x = i => m.l + iw*i/(weeks.length-1);
+  const y = v => m.t + ih*(1-(v-y0)/(y1-y0));
+  const el = (tag,attrs,parent)=>{const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);(parent||svg).appendChild(e);return e;};
+
+  for(let g=75; g<=90; g+=5){
+    el("line",{x1:m.l,x2:W-m.r,y1:y(g),y2:y(g),stroke:"var(--grid)","stroke-width":1});
+    const t=el("text",{x:m.l-8,y:y(g)+4,"text-anchor":"end","font-size":11,fill:"var(--faint)"}); t.textContent=g+"%";
+  }
+  weeks.forEach((w,i)=>{ if(i%2===1){const t=el("text",{x:x(i),y:H-8,"text-anchor":"middle","font-size":11,fill:"var(--faint)"}); t.textContent=w;} });
+
+  series.forEach(s=>{
+    const d = s.vals.map((v,i)=>(i?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1)).join(" ");
+    el("path",{d,fill:"none",stroke:s.color,"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"});
+    const last=s.vals.length-1;
+    el("circle",{cx:x(last),cy:y(s.vals[last]),r:4,fill:s.color,stroke:"var(--card)","stroke-width":2});
+    const t=el("text",{x:x(last)+10,y:y(s.vals[last])+4,"font-size":12,"font-weight":600,fill:"var(--ink)"});
+    t.textContent=s.name+" "+s.vals[last]+"%";
+  });
+
+  // hover crosshair + tooltip
+  const cross = el("line",{x1:0,x2:0,y1:m.t,y2:H-m.b,stroke:"var(--faint)","stroke-width":1,"stroke-dasharray":"3 3",opacity:0});
+  const dots = series.map(s=>el("circle",{r:4,fill:s.color,stroke:"var(--card)","stroke-width":2,opacity:0}));
+  const hit=el("rect",{x:m.l,y:m.t,width:iw,height:ih,fill:"transparent"});
+  const tt=document.getElementById("tt");
+  function showTT(html,cx,cy){ tt.innerHTML=html; tt.classList.add("show");
+    const r=tt.getBoundingClientRect();
+    tt.style.left=Math.max(8, Math.min(cx+14, innerWidth-r.width-8))+"px";
+    tt.style.top=Math.max(8, cy-r.height-12)+"px"; }
+  function hideTT(){ tt.classList.remove("show"); }
+  hit.addEventListener("mousemove",e=>{
+    const box=svg.getBoundingClientRect(), sx=W/box.width;
+    const px=(e.clientX-box.left)*sx;
+    const i=Math.max(0,Math.min(weeks.length-1,Math.round((px-m.l)/(iw/(weeks.length-1)))));
+    cross.setAttribute("x1",x(i)); cross.setAttribute("x2",x(i)); cross.setAttribute("opacity",1);
+    series.forEach((s,k)=>{dots[k].setAttribute("cx",x(i));dots[k].setAttribute("cy",y(s.vals[i]));dots[k].setAttribute("opacity",1);});
+    showTT('<div class="tt-title">Week of '+weeks[i]+'</div>'+series.map(s=>'<div class="row"><span class="sw" style="background:'+s.color+'"></span>'+s.name+' <b style="margin-left:auto">'+s.vals[i]+'%</b></div>').join(""), e.clientX, e.clientY);
+  });
+  hit.addEventListener("mouseleave",()=>{cross.setAttribute("opacity",0);dots.forEach(d=>d.setAttribute("opacity",0));hideTT();});
+
+  // data table
+  const tbl=document.getElementById("trend-table");
+  tbl.innerHTML="<thead><tr><th>Site</th>"+weeks.map(w=>"<th>"+w+"</th>").join("")+"</tr></thead><tbody>"+
+    series.map(s=>"<tr><td>"+s.name+"</td>"+s.vals.map(v=>'<td class="num">'+v+"%</td>").join("")+"</tr>").join("")+"</tbody>";
+
+  // ---- enrollment bars ----
+  const programs=[
+    {name:"Homework Help", enrolled:64, cap:70},
+    {name:"Soccer", enrolled:60, cap:60},
+    {name:"Robotics Club", enrolled:48, cap:48},
+    {name:"Coding Basics", enrolled:41, cap:45},
+    {name:"Art Studio", enrolled:32, cap:40},
+    {name:"Drama", enrolled:28, cap:35}
+  ];
+  const maxCap=Math.max(...programs.map(p=>p.cap));
+  const bars=document.getElementById("bars");
+  programs.forEach(p=>{
+    const row=document.createElement("div"); row.className="bar-row"; row.tabIndex=0;
+    const pct=p.enrolled/maxCap*100, cpct=p.cap/maxCap*100, full=p.enrolled>=p.cap;
+    row.innerHTML='<span class="name">'+p.name+'</span>'+
+      '<span class="track"><span class="fill'+(full?" full":"")+'" style="width:'+pct+'%"></span><span class="cap" style="left:'+cpct+'%"></span></span>'+
+      '<span class="val num">'+p.enrolled+' / '+p.cap+(full?" · full":"")+'</span>';
+    const html='<div class="tt-title">'+p.name+'</div><div class="row">'+p.enrolled+' enrolled of '+p.cap+' seats ('+Math.round(p.enrolled/p.cap*100)+'% full)</div>';
+    row.addEventListener("mousemove",e=>showTT(html,e.clientX,e.clientY));
+    row.addEventListener("mouseleave",hideTT);
+    // Keyboard parity: the row is focusable, so focus must reveal the same detail hover does.
+    row.addEventListener("focus",()=>{const r=row.getBoundingClientRect(); showTT(html,r.left,r.top);});
+    row.addEventListener("blur",hideTT);
+    bars.appendChild(row);
+  });
+
+  // ---- distribution strip ----
+  const counts=[1,3,10,32,36], total=counts.reduce((a,b)=>a+b,0);
+  const dist=document.getElementById("dist");
+  counts.forEach((c,i)=>{
+    const seg=document.createElement("div");
+    seg.className="d"+(i+1); seg.style.flexGrow=c; seg.textContent=c>=6?c:"";
+    seg.addEventListener("mousemove",e=>showTT('<div class="tt-title">'+(i+1)+' star'+(i?'s':'')+'</div><div class="row">'+c+' responses ('+Math.round(c/total*100)+'%)</div>',e.clientX,e.clientY));
+    seg.addEventListener("mouseleave",hideTT);
+    dist.appendChild(seg);
+  });
+})();
+</script>
+</body>
+</html>

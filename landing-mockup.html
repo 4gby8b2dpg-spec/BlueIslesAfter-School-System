@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BlueIsles — After-School Program Intelligence</title>
+<meta name="description" content="Drop your spreadsheets in. Get answers out. BlueIsles turns scattered attendance, enrollment, and survey files into one workspace — and the funder report your board asks for.">
+<style>
+  /* ============================================================
+     BlueIsles landing — working name, placeholder (to be confirmed).
+     Tokens shared with the product (dashboard-mockup.html) so the
+     marketing site and the app read as one product.
+     Fonts self-hosted; no external network requests.
+     ============================================================ */
+
+  @font-face{
+    font-family:"Fraunces"; font-style:normal; font-weight:400 600;
+    font-display:swap; src:url("assets/fonts/fraunces.woff2") format("woff2");
+  }
+  @font-face{
+    font-family:"Hanken Grotesk"; font-style:normal; font-weight:400 700;
+    font-display:swap; src:url("assets/fonts/hanken.woff2") format("woff2");
+  }
+
+  :root{
+    color-scheme:light;
+    /* neutrals — biased green, not grey (chosen to match the app) */
+    --ground:#F4F7F6; --raise:#FFFFFF; --card:#FFFFFF;
+    --ink:#14201F; --muted:#47595A; --faint:#657A78; --border:#E1E8E6;
+    /* brand */
+    --teal:#0D9488; --teal-deep:#0B6E66; --teal-ink:#0B5A54;
+    --marigold:#D97706; --marigold-deep:#B45309;
+    --navy:#0B3A4A; --navy-deep:#072A36;
+    /* semantic — only used inside the product peek */
+    --good:#2E7D45; --warn:#B45309; --crit:#B3261E;
+    --warn-bg:#FBF3E6; --info-bg:#EAF4F2;
+    /* on-dark ink (hero band) */
+    --on-dark:#F2F7F5; --on-dark-muted:#B7CCC8;
+    --shadow-sm:0 1px 2px rgba(11,42,54,.06), 0 2px 8px rgba(11,42,54,.05);
+    --shadow-md:0 6px 24px rgba(11,42,54,.10), 0 2px 6px rgba(11,42,54,.06);
+    --shadow-lg:0 24px 60px rgba(7,42,54,.28), 0 8px 24px rgba(7,42,54,.18);
+    --radius:14px; --radius-sm:10px;
+    --maxw:1160px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      color-scheme:dark;
+      --ground:#0E1B1C; --raise:#152726; --card:#152726;
+      --ink:#EAF2F0; --muted:#A9C0BC; --faint:#7E9793; --border:#26403D;
+      --teal:#2DBBAC; --teal-deep:#4FD0C1; --teal-ink:#8FE3D8;
+      --marigold:#F0A83C; --marigold-deep:#F0A83C;
+      --navy:#0A2C39; --navy-deep:#061F29;
+      --warn:#E39A46; --warn-bg:#2A2415; --info-bg:#12302E;
+      --on-dark:#F2F7F5; --on-dark-muted:#B7CCC8;
+      --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+      --shadow-md:0 6px 24px rgba(0,0,0,.4);
+      --shadow-lg:0 24px 60px rgba(0,0,0,.55), 0 8px 24px rgba(0,0,0,.4);
+    }
+  }
+  /* explicit toggle overrides win over the media query in both directions */
+  :root[data-theme="light"]{
+    color-scheme:light;
+    --ground:#F4F7F6; --raise:#FFFFFF; --card:#FFFFFF;
+    --ink:#14201F; --muted:#47595A; --faint:#657A78; --border:#E1E8E6;
+    --teal:#0D9488; --teal-deep:#0B6E66; --teal-ink:#0B5A54;
+    --marigold:#D97706; --marigold-deep:#B45309;
+    --navy:#0B3A4A; --navy-deep:#072A36;
+    --warn:#B45309; --warn-bg:#FBF3E6; --info-bg:#EAF4F2;
+    --shadow-lg:0 24px 60px rgba(7,42,54,.28), 0 8px 24px rgba(7,42,54,.18);
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --ground:#0E1B1C; --raise:#152726; --card:#152726;
+    --ink:#EAF2F0; --muted:#A9C0BC; --faint:#7E9793; --border:#26403D;
+    --teal:#2DBBAC; --teal-deep:#4FD0C1; --teal-ink:#8FE3D8;
+    --marigold:#F0A83C; --marigold-deep:#F0A83C;
+    --navy:#0A2C39; --navy-deep:#061F29;
+    --warn:#E39A46; --warn-bg:#2A2415; --info-bg:#12302E;
+    --shadow-lg:0 24px 60px rgba(0,0,0,.55), 0 8px 24px rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:17px; line-height:1.55; -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  h1,h2,h3{font-family:"Fraunces",Georgia,serif; font-weight:560; line-height:1.08;
+    letter-spacing:-.01em; text-wrap:balance; margin:0;}
+  p{margin:0}
+  a{color:inherit; text-decoration:none}
+  img{max-width:100%; display:block}
+  .num{font-variant-numeric:tabular-nums}
+  :focus-visible{outline:2px solid var(--teal); outline-offset:3px; border-radius:6px}
+
+  .wrap{max-width:var(--maxw); margin-inline:auto; padding-inline:24px}
+  .eyebrow{font-size:12.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--teal-ink)}
+
+  /* ---------- buttons ---------- */
+  .btn{display:inline-flex; align-items:center; gap:8px; font-weight:600; font-size:15.5px;
+    padding:13px 22px; border-radius:999px; border:1px solid transparent; cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease}
+  .btn:hover{transform:translateY(-1px)}
+  @media (prefers-reduced-motion:reduce){ .btn:hover{transform:none} }
+  .btn-primary{background:var(--marigold); color:#26140A; box-shadow:var(--shadow-sm)}
+  .btn-primary:hover{background:var(--marigold-deep); color:#fff}
+  .btn-ghost{background:transparent; color:inherit; border-color:var(--border)}
+  .btn-ghost:hover{border-color:var(--teal); color:var(--teal-ink)}
+  .btn-onDark{background:rgba(255,255,255,.10); color:var(--on-dark);
+    border-color:rgba(255,255,255,.28)}
+  .btn-onDark:hover{background:rgba(255,255,255,.18)}
+
+  /* ---------- nav ---------- */
+  header.nav{position:sticky; top:0; z-index:50; backdrop-filter:saturate(1.2) blur(10px);
+    background:color-mix(in srgb, var(--ground) 82%, transparent);
+    border-bottom:1px solid var(--border)}
+  .nav-in{display:flex; align-items:center; gap:20px; height:66px}
+  .brand{display:flex; align-items:center; gap:11px; font-family:"Fraunces",serif;
+    font-weight:560; font-size:21px; letter-spacing:-.01em}
+  .brand .tag{font-family:"Hanken Grotesk",sans-serif; font-size:10px; font-weight:700;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--faint);
+    border:1px solid var(--border); padding:2px 7px; border-radius:999px}
+  .nav-links{display:flex; gap:26px; margin-left:14px; font-size:15px; color:var(--muted); font-weight:500}
+  .nav-links a:hover{color:var(--ink)}
+  .nav-cta{margin-left:auto; display:flex; align-items:center; gap:10px}
+  .theme-btn{display:grid; place-items:center; width:38px; height:38px; border-radius:999px;
+    border:1px solid var(--border); background:transparent; color:var(--muted)}
+  .theme-btn:hover{color:var(--ink); border-color:var(--teal)}
+  @media (max-width:820px){ .nav-links{display:none} .nav-cta .btn-ghost{display:none} }
+
+  /* ---------- hero ---------- */
+  .hero{position:relative; overflow:hidden;
+    background:
+      radial-gradient(120% 120% at 88% -10%, color-mix(in srgb,var(--teal) 32%, var(--navy)) 0%, transparent 55%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color:var(--on-dark)}
+  .hero::after{content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(60% 90% at 12% 110%, rgba(217,119,6,.18), transparent 60%)}
+  .hero-in{position:relative; z-index:1; display:grid; grid-template-columns:1.05fr .95fr;
+    gap:52px; align-items:center; padding:72px 0 90px}
+  .hero h1{color:var(--on-dark); font-size:clamp(38px, 5.4vw, 66px); font-weight:520;
+    letter-spacing:-.02em}
+  .hero h1 em{font-style:italic; color:var(--marigold); font-weight:500}
+  .hero .lede{color:var(--on-dark-muted); font-size:19px; max-width:34ch; margin-top:22px}
+  .hero .eyebrow{color:#8FE3D8; display:inline-flex; align-items:center; gap:9px}
+  .hero .eyebrow::before{content:""; width:7px; height:7px; border-radius:999px;
+    background:var(--marigold); box-shadow:0 0 0 4px rgba(217,119,6,.22)}
+  .hero-cta{display:flex; gap:13px; margin-top:32px; flex-wrap:wrap}
+  .hero-trust{margin-top:26px; display:flex; align-items:center; gap:14px;
+    color:var(--on-dark-muted); font-size:13.5px}
+  .hero-trust .dot{width:4px;height:4px;border-radius:9px;background:var(--on-dark-muted);opacity:.5}
+
+  /* hero visual: photo + overlapping product peek */
+  .hero-visual{position:relative}
+  .photo-frame{position:relative; border-radius:20px; overflow:hidden;
+    box-shadow:var(--shadow-lg); border:1px solid rgba(255,255,255,.14);
+    aspect-ratio:5/4}
+  .photo-frame img{width:100%; height:100%; object-fit:cover}
+  .photo-frame::after{content:""; position:absolute; inset:0;
+    background:linear-gradient(200deg, transparent 55%, rgba(7,42,54,.42))}
+  .peek{position:absolute; left:-34px; bottom:-30px; width:270px; z-index:2;
+    background:var(--card); color:var(--ink); border:1px solid var(--border);
+    border-radius:var(--radius); box-shadow:var(--shadow-lg); padding:15px 16px 16px}
+  .peek-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+  .peek-head .lbl{font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--faint)}
+  .peek-live{display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--good)}
+  .peek-live::before{content:""; width:7px;height:7px;border-radius:9px;background:var(--good);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 22%, transparent)}
+  .kpi-row{display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:12px}
+  .kpi{background:var(--ground); border:1px solid var(--border); border-radius:10px; padding:9px 10px}
+  .kpi .k-val{font-family:"Fraunces",serif; font-size:22px; font-weight:560; line-height:1}
+  .kpi .k-lab{font-size:10.5px; color:var(--faint); margin-top:3px}
+  .kpi .k-delta{font-size:10.5px; font-weight:700}
+  .kpi.up .k-delta{color:var(--good)} .kpi.risk .k-val{color:var(--warn)}
+  .peek-spark{display:block; width:100%; height:38px; margin:2px 0 11px}
+  .peek-alert{display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600;
+    background:var(--warn-bg); color:var(--warn); border-radius:9px; padding:8px 10px}
+
+  @media (max-width:900px){
+    .hero-in{grid-template-columns:1fr; gap:60px; padding:52px 0 70px}
+    .hero-visual{max-width:460px}
+    .peek{left:auto; right:-10px}
+  }
+  @media (max-width:520px){
+    .peek{width:230px; right:0; bottom:-22px}
+    .hero .lede{max-width:none}
+  }
+
+  /* ---------- stat band ---------- */
+  .stats{background:var(--raise); border-block:1px solid var(--border)}
+  .stats-in{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:34px 0}
+  .stat{padding:6px 22px; border-left:2px solid var(--border)}
+  .stat:first-child{border-left:0}
+  .stat .s-val{font-family:"Fraunces",serif; font-size:clamp(30px,3.4vw,40px); font-weight:560;
+    color:var(--teal-ink); line-height:1}
+  .stat .s-lab{font-size:13.5px; color:var(--muted); margin-top:8px; max-width:22ch}
+  @media (max-width:760px){ .stats-in{grid-template-columns:1fr 1fr; gap:22px 8px}
+    .stat:nth-child(3){border-left:0} }
+  @media (max-width:440px){ .stats-in{grid-template-columns:1fr} .stat{border-left:0; border-top:1px solid var(--border); padding-top:18px} .stat:first-child{border-top:0} }
+
+  /* ---------- section frame ---------- */
+  section{padding:88px 0}
+  .sec-head{max-width:56ch; margin-bottom:44px}
+  .sec-head h2{font-size:clamp(28px,3.6vw,44px); margin-top:14px}
+  .sec-head p{color:var(--muted); font-size:18px; margin-top:16px}
+
+  /* ---------- problem -> fix grid ---------- */
+  .pf-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+  .pf{background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:24px; box-shadow:var(--shadow-sm); transition:box-shadow .2s ease, transform .2s ease}
+  .pf:hover{box-shadow:var(--shadow-md); transform:translateY(-2px)}
+  @media (prefers-reduced-motion:reduce){ .pf:hover{transform:none} }
+  .pf .pain{display:flex; gap:9px; align-items:flex-start; color:var(--muted); font-size:14.5px}
+  .pf .pain b{color:var(--ink); font-weight:600}
+  .pf .arrow{margin:14px 0; height:1px; background:var(--border); position:relative}
+  .pf .arrow::after{content:"→ BlueIsles"; position:absolute; top:-10px; left:0;
+    background:var(--card); padding-right:10px; font-size:11px; font-weight:700;
+    letter-spacing:.06em; color:var(--teal-ink)}
+  .pf .fix{font-size:15.5px; font-weight:500}
+  @media (max-width:900px){ .pf-grid{grid-template-columns:1fr 1fr} }
+  @media (max-width:600px){ .pf-grid{grid-template-columns:1fr} }
+
+  /* ---------- how it works (3 steps) ---------- */
+  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:26px; counter-reset:step}
+  .step{position:relative; padding-top:22px; border-top:2px solid var(--teal)}
+  .step::before{counter-increment:step; content:"0" counter(step);
+    font-family:"Fraunces",serif; font-size:15px; font-weight:600; color:var(--teal-ink);
+    font-variant-numeric:tabular-nums}
+  .step h3{font-size:23px; margin:8px 0 10px}
+  .step p{color:var(--muted); font-size:15.5px}
+  @media (max-width:760px){ .steps{grid-template-columns:1fr; gap:20px} }
+
+  /* ---------- modules showcase ---------- */
+  .modules{background:var(--raise); border-block:1px solid var(--border)}
+  .mod-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+  .mod{background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:22px; display:flex; flex-direction:column; gap:9px}
+  .mod .m-ic{width:38px; height:38px; border-radius:10px; display:grid; place-items:center;
+    background:var(--info-bg); color:var(--teal-ink)}
+  .mod .m-ic svg{width:20px; height:20px}
+  .mod h3{font-size:18.5px}
+  .mod p{color:var(--muted); font-size:14.5px}
+  .mod .m-tag{margin-top:auto; font-size:11px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--faint)}
+  .mod .m-tag.mvp{color:var(--teal-ink)}
+  @media (max-width:900px){ .mod-grid{grid-template-columns:1fr 1fr} }
+  @media (max-width:560px){ .mod-grid{grid-template-columns:1fr} }
+
+  /* ---------- feature split (mentor image) ---------- */
+  .split{display:grid; grid-template-columns:1fr 1fr; gap:52px; align-items:center}
+  .split .s-img{border-radius:18px; overflow:hidden; box-shadow:var(--shadow-md);
+    border:1px solid var(--border); aspect-ratio:6/5}
+  .split .s-img img{width:100%;height:100%;object-fit:cover}
+  .split h2{font-size:clamp(26px,3.2vw,38px)}
+  .split p{color:var(--muted); font-size:17px; margin-top:16px}
+  .split ul{list-style:none; padding:0; margin:22px 0 0; display:grid; gap:12px}
+  .split li{display:flex; gap:11px; font-size:15.5px}
+  .split li svg{flex:none; width:20px; height:20px; color:var(--teal); margin-top:2px}
+  @media (max-width:820px){ .split{grid-template-columns:1fr; gap:32px} .split .s-img{order:-1} }
+
+  /* ---------- privacy strip ---------- */
+  .privacy{background:
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%); color:var(--on-dark)}
+  .privacy .sec-head h2{color:var(--on-dark)}
+  .privacy .sec-head p{color:var(--on-dark-muted)}
+  .privacy .eyebrow{color:#8FE3D8}
+  .priv-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:8px}
+  .priv{border:1px solid rgba(255,255,255,.14); border-radius:var(--radius); padding:20px;
+    background:rgba(255,255,255,.04)}
+  .priv svg{width:22px; height:22px; color:var(--marigold); margin-bottom:12px}
+  .priv h3{font-family:"Hanken Grotesk",sans-serif; font-size:15.5px; font-weight:700; color:var(--on-dark)}
+  .priv p{color:var(--on-dark-muted); font-size:13.5px; margin-top:6px}
+  @media (max-width:820px){ .priv-grid{grid-template-columns:1fr 1fr} }
+  @media (max-width:480px){ .priv-grid{grid-template-columns:1fr} }
+
+  /* ---------- final CTA ---------- */
+  .cta-band{padding:96px 0}
+  .cta-card{background:var(--card); border:1px solid var(--border); border-radius:24px;
+    box-shadow:var(--shadow-md); padding:56px; text-align:center; position:relative; overflow:hidden}
+  .cta-card::before{content:""; position:absolute; inset:0;
+    background:radial-gradient(70% 120% at 50% -20%, color-mix(in srgb,var(--teal) 12%, transparent), transparent 60%)}
+  .cta-card > *{position:relative}
+  .cta-card h2{font-size:clamp(30px,4vw,46px)}
+  .cta-card p{color:var(--muted); font-size:18px; margin:16px auto 0; max-width:48ch}
+  .cta-card .hero-cta{justify-content:center; margin-top:30px}
+  .cta-note{margin-top:16px; font-size:13px; color:var(--faint)}
+
+  /* ---------- footer ---------- */
+  footer{border-top:1px solid var(--border); padding:44px 0; color:var(--muted); font-size:14px}
+  .foot-in{display:flex; flex-wrap:wrap; gap:22px 40px; align-items:center; justify-content:space-between}
+  .foot-links{display:flex; gap:22px; flex-wrap:wrap}
+  .foot-links a:hover{color:var(--ink)}
+  .foot-note{width:100%; margin-top:26px; padding-top:20px; border-top:1px solid var(--border);
+    font-size:12.5px; color:var(--faint); display:flex; flex-wrap:wrap; gap:6px 16px; justify-content:space-between}
+
+  /* ---------- scroll reveal ---------- */
+  .reveal{opacity:0; transform:translateY(16px); transition:opacity .6s ease, transform .6s ease}
+  .reveal.in{opacity:1; transform:none}
+  @media (prefers-reduced-motion:reduce){ .reveal{opacity:1; transform:none; transition:none} }
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="BlueIsles home">
+      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M16 3c-1.4 3.6-4 6-7.6 7.4C12 11.8 14.6 14.4 16 18c1.4-3.6 4-6.2 7.6-7.6C20 9 17.4 6.6 16 3Z" fill="var(--teal)"/>
+        <path d="M6 20c3 .8 5.2 2.6 6.6 5.4C14 22.6 16.2 20.8 19.2 20c-3-.8-5.2-2.6-6.6-5.4C11.2 17.4 9 19.2 6 20Z" fill="var(--teal-deep)" opacity=".85"/>
+        <circle cx="24" cy="22" r="3" fill="var(--marigold)"/>
+      </svg>
+      BlueIsles <span class="tag">Working name</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#problem">The problem</a>
+      <a href="#how">How it works</a>
+      <a href="#modules">What's inside</a>
+      <a href="#privacy">Privacy</a>
+    </nav>
+    <div class="nav-cta">
+      <button class="theme-btn" id="themeToggle" aria-label="Toggle light or dark theme" title="Toggle theme">
+        <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
+      </button>
+      <a class="btn btn-ghost" href="#how">See how</a>
+      <a class="btn btn-primary" href="#cta">Request early access</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" style="padding:0">
+    <div class="wrap hero-in">
+      <div class="hero-copy">
+        <span class="eyebrow">After-school program intelligence</span>
+        <h1>Drop your spreadsheets in.<br><em>Get answers out.</em></h1>
+        <p class="lede">Attendance in one file, enrollment in another, surveys in a third. BlueIsles pulls the data you already have into one workspace — then hands you the funder report your board asks for.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#cta">Request early access</a>
+          <a class="btn btn-onDark" href="#how">Watch the 3-step loop</a>
+        </div>
+        <div class="hero-trust">
+          <span>Built for directors &amp; funders</span><span class="dot"></span>
+          <span>FERPA-aware by design</span><span class="dot"></span>
+          <span>Import in minutes</span>
+        </div>
+      </div>
+
+      <div class="hero-visual reveal">
+        <div class="photo-frame">
+          <img src="assets/img/hero-classroom.jpg"
+               alt="Students gathered around a table in an after-school session, engaged with an instructor" loading="eager" width="1400" height="871">
+        </div>
+        <!-- live dashboard peek -->
+        <aside class="peek" aria-label="Preview of the BlueIsles dashboard">
+          <div class="peek-head">
+            <span class="lbl">Program dashboard</span>
+            <span class="peek-live">Live</span>
+          </div>
+          <div class="kpi-row">
+            <div class="kpi up">
+              <div class="k-val num">87.4%</div>
+              <div class="k-lab">Attendance · 4wk</div>
+              <div class="k-delta num">▲ 1.2</div>
+            </div>
+            <div class="kpi risk">
+              <div class="k-val num">14</div>
+              <div class="k-lab">Students at risk</div>
+              <div class="k-delta">⚠ follow up</div>
+            </div>
+          </div>
+          <svg class="peek-spark" viewBox="0 0 240 40" preserveAspectRatio="none" aria-hidden="true">
+            <polyline points="0,30 30,28 60,31 90,22 120,24 150,16 180,18 210,11 240,9"
+              fill="none" stroke="var(--teal)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="240" cy="9" r="3.4" fill="var(--marigold)"/>
+          </svg>
+          <div class="peek-alert">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 2 18a2 2 0 0 0 1.7 3h16.6A2 2 0 0 0 22 18L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+            3 sessions missing attendance
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STAT BAND ============ -->
+  <section class="stats" style="padding:0">
+    <div class="wrap stats-in">
+      <div class="stat"><div class="s-val num">&lt;15 min</div><div class="s-lab">to produce a funder report — down from days</div></div>
+      <div class="stat"><div class="s-val num">90%</div><div class="s-lab">of sessions get attendance within 24 hours</div></div>
+      <div class="stat"><div class="s-val num">95%</div><div class="s-lab">of imported rows commit without rework</div></div>
+      <div class="stat"><div class="s-val num">1</div><div class="s-lab">workspace instead of a dozen scattered files</div></div>
+    </div>
+  </section>
+
+  <!-- ============ PROBLEM -> FIX ============ -->
+  <section id="problem">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Why it exists</span>
+        <h2>After-school programs run on scattered spreadsheets. Nobody trusts the totals.</h2>
+        <p>Six problems show up in every program office. BlueIsles was built around fixing each one.</p>
+      </div>
+      <div class="pf-grid">
+        <article class="pf reveal">
+          <div class="pain"><b>Data lives in a dozen inconsistent Excel files</b></div>
+          <div class="arrow"></div>
+          <div class="fix">An import wizard maps your columns, validates every row, and catches duplicates before anything is saved.</div>
+        </article>
+        <article class="pf reveal">
+          <div class="pain"><b>Attendance is on paper — entered late, or never</b></div>
+          <div class="arrow"></div>
+          <div class="fix">Roster check-in and a tablet kiosk that keep working when the gym Wi-Fi drops, then sync.</div>
+        </article>
+        <article class="pf reveal">
+          <div class="pain"><b>Planning happens on a whiteboard; conflicts surface too late</b></div>
+          <div class="arrow"></div>
+          <div class="fix">A live calendar flags a double-booked room, staff, or student the moment you schedule it.</div>
+        </article>
+        <article class="pf reveal">
+          <div class="pain"><b>Feedback is collected sporadically, connected to nothing</b></div>
+          <div class="arrow"></div>
+          <div class="fix">Built-in surveys tie every response back to a program, a term, and its attendance.</div>
+        </article>
+        <article class="pf reveal">
+          <div class="pain"><b>Funder and board reports take days to assemble by hand</b></div>
+          <div class="arrow"></div>
+          <div class="fix">Report templates render to polished PDF and Excel, with every metric defined in the footer.</div>
+        </article>
+        <article class="pf reveal">
+          <div class="pain"><b>No early warning when a student disengages</b></div>
+          <div class="arrow"></div>
+          <div class="fix">Risk flags for chronic absence, ratio breaches, and falling ratings surface on the dashboard.</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section id="how" class="modules">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">The core loop</span>
+        <h2>Import what you have. Track what happens. Report what matters.</h2>
+        <p>Three steps, on repeat, all term. No migration project, no data-entry marathon.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <h3>Import</h3>
+          <p>Drag in an Excel or CSV export. BlueIsles auto-suggests the column mapping, flags bad dates and missing fields, and remembers the mapping so next month is one click.</p>
+        </div>
+        <div class="step reveal">
+          <h3>Track</h3>
+          <p>Take attendance from a roster or a door kiosk, plan sessions on a conflict-aware calendar, and collect survey feedback — all captured against the same records.</p>
+        </div>
+        <div class="step reveal">
+          <h3>Report</h3>
+          <p>Open a dashboard that tells you what needs attention today, then export the monthly, attendance, or grant report your partners keep asking for.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURE SPLIT (mentor image) ============ -->
+  <section>
+    <div class="wrap split">
+      <div class="split-copy reveal">
+        <span class="eyebrow">See every child, not just the totals</span>
+        <h2>The numbers stay attached to the kids behind them.</h2>
+        <p>Every attendance mark, enrollment, and survey answer rolls up to a dashboard — and rolls back down to a single student's profile when a director needs to follow up.</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Attendance sparkline, flags, and enrollment history on one profile.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Chronic-absence follow-up before a student quietly drops off.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Guardian contacts and authorized-pickup, right where staff need them.</span></li>
+        </ul>
+      </div>
+      <div class="s-img reveal">
+        <img src="assets/img/cand-mentor.jpg" alt="An instructor sitting beside a young student, helping them work through an activity" loading="lazy" width="1200" height="800">
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MODULES ============ -->
+  <section id="modules" class="modules">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">What's inside</span>
+        <h2>Nine modules, one workspace.</h2>
+        <p>The MVP ships the front-to-back loop; the rest turns records into intelligence.</p>
+      </div>
+      <div class="mod-grid">
+        <article class="mod reveal">
+          <div class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+          <h3>Data Import Center</h3>
+          <p>Upload, map, validate, de-duplicate. Saved templates make the next import one click.</p>
+          <span class="m-tag mvp">In the MVP</span>
+        </article>
+        <article class="mod reveal">
+          <div class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 6.5a3 3 0 0 1 0 5.5M18 20c0-2.4-1-4.4-2.5-5.6"/></svg></div>
+          <h3>Participants &amp; Enrollment</h3>
+          <p>Profiles, guardians, consent flags, and searchable rosters with bulk actions.</p>
+          <span class="m-tag mvp">In the MVP</span>
+        </article>
+        <article class="mod reveal">
+          <div class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
+          <h3>Programs &amp; Planning</h3>
+          <p>Programs → activities → recurring sessions, with conflict detection at save time.</p>
+          <span class="m-tag mvp">In the MVP</span>
+        </article>
+        <article class="mod reveal">
+          <div class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <h3>Attendance</h3>
+          <p>Roster check-in, bulk entry, offline-tolerant kiosk, and missing-attendance alerts.</p>
+          <span class="m-tag mvp">In the MVP</span>
+        </article>
+        <article class="mod reveal">
+          <div class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M7 13h4v4H7z"/></svg></div>
+          <h3>Calendar &amp; Scheduling</h3>
+          <p>Month, week, and day views; drag-to-reschedule; closures that suppress false alerts.</p>
+          <span class="m-tag mvp">In the MVP</span>
+        </article>
+        <article class="mod reveal">
+          <div class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 13l2 2 4-4"/></svg></div>
+          <h3>Surveys &amp; Feedback</h3>
+          <p>Build surveys, target audiences, and read per-question results with pre/post pairing.</p>
+          <span class="m-tag">Phase 2</span>
+        </article>
+        <article class="mod reveal">
+          <div class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
+          <h3>Analytics &amp; Dashboards</h3>
+          <p>KPIs, attendance trends, enrollment vs. capacity, and a metric explorer.</p>
+          <span class="m-tag mvp">Dashboard in MVP</span>
+        </article>
+        <article class="mod reveal">
+          <div class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 18h4"/></svg></div>
+          <h3>Reports</h3>
+          <p>Monthly, attendance, and grant templates as PDF + Excel, with defensible definitions.</p>
+          <span class="m-tag mvp">In the MVP</span>
+        </article>
+        <article class="mod reveal">
+          <div class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2 4 6v6c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h3>Administration</h3>
+          <p>Roles and site scope, org settings, and an append-only audit log of every change.</p>
+          <span class="m-tag mvp">In the MVP</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PRIVACY ============ -->
+  <section id="privacy" class="privacy">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Because this is minors' data</span>
+        <h2>Built to be trusted with student records.</h2>
+        <p>Privacy isn't a settings page bolted on at the end — it's in the schema, the roles, and the logs.</p>
+      </div>
+      <div class="priv-grid">
+        <div class="priv reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          <h3>Role-based access</h3>
+          <p>Permissions enforced server-side, not just hidden in the UI. Viewers see aggregates only.</p>
+        </div>
+        <div class="priv reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2 4 6v6c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6z"/></svg>
+          <h3>Encrypted &amp; FERPA-aware</h3>
+          <p>Encrypted in transit and at rest; medical notes and PII handled with consent flags.</p>
+        </div>
+        <div class="priv reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
+          <h3>Full audit log</h3>
+          <p>Every create, update, delete, and export recorded with actor, time, and before/after.</p>
+        </div>
+        <div class="priv reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.2-8.6M21 5l-9 9-3-3"/></svg>
+          <h3>WCAG 2.1 AA</h3>
+          <p>Keyboard-operable check-in, visible focus, and color never the only signal.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA ============ -->
+  <section id="cta" class="cta-band">
+    <div class="wrap">
+      <div class="cta-card reveal">
+        <span class="eyebrow">Early access</span>
+        <h2>Get your spreadsheets working for you.</h2>
+        <p>BlueIsles is in active build. Join the early-access list to shape the MVP and be first in when it opens for your program.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#cta">Request early access</a>
+          <a class="btn btn-ghost" href="#how">See the 3-step loop</a>
+        </div>
+        <p class="cta-note">No spam. We'll only email about early access and launch.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-in">
+      <a class="brand" href="#top" aria-label="BlueIsles home">
+        <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M16 3c-1.4 3.6-4 6-7.6 7.4C12 11.8 14.6 14.4 16 18c1.4-3.6 4-6.2 7.6-7.6C20 9 17.4 6.6 16 3Z" fill="var(--teal)"/>
+          <circle cx="24" cy="22" r="3" fill="var(--marigold)"/>
+        </svg>
+        BlueIsles
+      </a>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="#problem">The problem</a>
+        <a href="#how">How it works</a>
+        <a href="#modules">What's inside</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#cta">Early access</a>
+      </nav>
+    </div>
+    <div class="foot-note">
+      <span>&ldquo;BlueIsles&rdquo; is a working name — placeholder, to be confirmed.</span>
+      <span>Prototype landing page · illustrative content · no data is collected.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Theme toggle — starts from stored choice or the OS preference, then persists.
+  (function(){
+    var root = document.documentElement;
+    var stored = null;
+    try { stored = localStorage.getItem("bi-theme"); } catch(e){}
+    if (stored) root.setAttribute("data-theme", stored);
+    var btn = document.getElementById("themeToggle");
+    btn.addEventListener("click", function(){
+      var isDark = getComputedStyle(root).getPropertyValue("color-scheme").trim().indexOf("dark") > -1;
+      var next = isDark ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem("bi-theme", next); } catch(e){}
+    });
+  })();
+
+  // Scroll reveal — progressive enhancement, disabled for reduced-motion.
+  (function(){
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var els = document.querySelectorAll(".reveal");
+    if (reduce || !("IntersectionObserver" in window)){
+      els.forEach(function(el){ el.classList.add("in"); });
+      return;
+    }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+    els.forEach(function(el){ io.observe(el); });
+  })();
+</script>
+</body>
+</html>
