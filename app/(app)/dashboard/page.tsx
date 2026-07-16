@@ -1,46 +1,193 @@
-import Link from "next/link";
+import { requireAppContext } from "@/lib/auth-context";
+import { getDashboardData } from "@/lib/dashboard";
 
-// Placeholder. Next build target (§8.4 step 6): port dashboard-mockup.html to
-// live Supabase data — auth → RLS → query → SVG charts, end to end.
-export default function DashboardPage() {
+export const dynamic = "force-dynamic";
+
+function Sparkline({ points }: { points: (number | null)[] }) {
+  const vals = points.map((p) => p ?? 0);
+  const max = 100;
+  const min = Math.min(60, ...vals.filter((_, i) => points[i] != null));
+  const w = 260,
+    h = 60;
+  const step = w / (points.length - 1);
+  const y = (v: number) => h - ((v - min) / (max - min)) * h;
+  const coords = points
+    .map((p, i) => (p == null ? null : `${i * step},${y(p).toFixed(1)}`))
+    .filter(Boolean) as string[];
+  const last = points.map((p, i) => ({ p, i })).filter((x) => x.p != null).pop();
   return (
-    <main
-      style={{
-        minHeight: "100dvh",
-        display: "grid",
-        placeItems: "center",
-        padding: "48px 24px",
-        background: "#f4f7f6",
-        color: "#14201f",
-        fontFamily: "system-ui, sans-serif",
-        textAlign: "center",
-      }}
+    <svg
+      className="spark"
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="none"
+      role="img"
+      aria-label="Weekly attendance rate, last 8 weeks"
     >
-      <div style={{ maxWidth: 520 }}>
-        <p
-          style={{
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: ".12em",
-            textTransform: "uppercase",
-            color: "#0b5a54",
-          }}
-        >
-          BlueIsles · App shell
-        </p>
-        <h1 style={{ fontSize: 30, margin: "12px 0 10px", lineHeight: 1.1 }}>
-          Dashboard goes here
-        </h1>
-        <p style={{ color: "#47595a", lineHeight: 1.5 }}>
-          Scaffolding is in place. This route is where the §5 dashboard mockup
-          becomes live — reading real data through Supabase with RLS. Until then,
-          the approved design lives in <code>dashboard-mockup.html</code>.
-        </p>
-        <p style={{ marginTop: 24 }}>
-          <Link href="/" style={{ color: "#0b5a54", fontWeight: 600 }}>
-            ← Back to the landing page
-          </Link>
-        </p>
+      <polyline
+        points={coords.join(" ")}
+        fill="none"
+        stroke="#0D9488"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {last && last.p != null && (
+        <circle cx={last.i * step} cy={y(last.p)} r="3.6" fill="#D97706" />
+      )}
+    </svg>
+  );
+}
+
+export default async function DashboardPage() {
+  const ctx = await requireAppContext();
+  const d = await getDashboardData(ctx.orgId);
+  const maxEnroll = Math.max(1, ...d.enrollByProgram.map((p) => Math.max(p.count, p.capacity ?? 0)));
+
+  const kpiFmt = (v: number | null, suffix = "") =>
+    v == null ? "—" : `${Math.round(v * 10) / 10}${suffix}`;
+
+  return (
+    <main className="dash">
+      <div className="dash-head">
+        <h1>Good afternoon, {ctx.fullName.split(" ")[0]}</h1>
+        <p>Here&rsquo;s what needs your attention at {ctx.orgName} today.</p>
+      </div>
+
+      {/* KPI row */}
+      <section className="kpi-row" aria-label="Key metrics">
+        <div className="kpi">
+          <div className="kpi-val num">{d.kpis.activeEnrollment}</div>
+          <div className="kpi-lab">Active enrollment</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-val num">{kpiFmt(d.kpis.attRate, "%")}</div>
+          <div className="kpi-lab">Attendance rate · 4wk</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-val num">{d.kpis.sessionsThisWeek}</div>
+          <div className="kpi-lab">Sessions this week</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-val num">{d.kpis.activePrograms}</div>
+          <div className="kpi-lab">Active programs</div>
+        </div>
+        <div className={d.kpis.atRisk > 0 ? "kpi warn" : "kpi"}>
+          <div className="kpi-val num">{d.kpis.atRisk}</div>
+          <div className="kpi-lab">Students at risk</div>
+        </div>
+      </section>
+
+      <div className="dash-grid">
+        {/* main column */}
+        <div className="dash-col">
+          <section className="card">
+            <div className="card-head">
+              <h2>Attendance trend</h2>
+              <span className="card-sub">Last 8 weeks</span>
+            </div>
+            <Sparkline points={d.trend} />
+          </section>
+
+          <section className="card">
+            <div className="card-head">
+              <h2>Enrollment by program</h2>
+              <span className="card-sub">Enrolled vs. capacity</span>
+            </div>
+            {d.enrollByProgram.length === 0 ? (
+              <p className="empty">No programs yet.</p>
+            ) : (
+              <ul className="bars">
+                {d.enrollByProgram.map((p, i) => {
+                  const pct = (p.count / maxEnroll) * 100;
+                  const capPct = p.capacity ? (p.capacity / maxEnroll) * 100 : null;
+                  const full = p.capacity != null && p.count >= p.capacity;
+                  return (
+                    <li key={i} className="bar-row">
+                      <span className="bar-name">{p.name}</span>
+                      <span className="bar-track">
+                        <span
+                          className={full ? "bar-fill full" : "bar-fill"}
+                          style={{ width: `${pct}%` }}
+                        />
+                        {capPct != null && (
+                          <span className="bar-cap" style={{ left: `${capPct}%` }} />
+                        )}
+                      </span>
+                      <span className="bar-val num">
+                        {p.count}
+                        {p.capacity != null ? `/${p.capacity}` : ""}
+                        {full ? " · full" : ""}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        </div>
+
+        {/* right rail */}
+        <div className="dash-rail">
+          <section className="card">
+            <div className="card-head">
+              <h2>Needs attention</h2>
+            </div>
+            {d.alerts.length === 0 ? (
+              <p className="empty good">Nothing needs attention. 🎉</p>
+            ) : (
+              <ul className="alerts">
+                {d.alerts.map((a) => (
+                  <li key={a.id} className={`alert ${a.severity}`}>
+                    <span className="alert-ic" aria-hidden="true">
+                      {a.severity === "critical" ? "!" : a.severity === "warning" ? "▲" : "i"}
+                    </span>
+                    <span className="alert-txt">{a.label}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="card">
+            <div className="card-head">
+              <h2>Today&rsquo;s schedule</h2>
+            </div>
+            {d.today.length === 0 ? (
+              <p className="empty">No sessions scheduled today.</p>
+            ) : (
+              <ul className="sched">
+                {d.today.map((s, i) => (
+                  <li key={i} className="sched-row">
+                    <span className="sched-time num">{s.time}</span>
+                    <span className="sched-prog">{s.program}</span>
+                    <span className="sched-room">{s.room}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="card">
+            <div className="card-head">
+              <h2>Recent imports</h2>
+            </div>
+            {d.imports.length === 0 ? (
+              <p className="empty">No imports yet.</p>
+            ) : (
+              <ul className="imports">
+                {d.imports.map((im) => (
+                  <li key={im.id} className="import-row">
+                    <span className="import-check" aria-hidden="true">
+                      ✓
+                    </span>
+                    <span className="import-name">{im.name}</span>
+                    <span className="import-rows num">{im.rows} rows</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
       </div>
     </main>
   );
