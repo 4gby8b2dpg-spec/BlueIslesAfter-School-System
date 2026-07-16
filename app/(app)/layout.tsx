@@ -1,19 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
+import { AppNav } from "@/components/app-nav";
 import "./app.css";
-
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", active: true },
-  { href: "/dashboard", label: "Data Import" },
-  { href: "/dashboard", label: "Participants" },
-  { href: "/dashboard", label: "Programs" },
-  { href: "/dashboard", label: "Attendance" },
-  { href: "/dashboard", label: "Calendar" },
-  { href: "/dashboard", label: "Surveys" },
-  { href: "/dashboard", label: "Reports" },
-];
 
 async function signOut() {
   "use server";
@@ -48,17 +37,7 @@ export default async function AppLayout({
           </svg>
           BlueIsles
         </div>
-        <nav className="app-nav">
-          {NAV.map((n, i) => (
-            <Link
-              key={i}
-              href={n.href}
-              className={n.active ? "app-nav-item active" : "app-nav-item"}
-            >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
+        <AppNav />
       </aside>
 
       <div className="app-main">

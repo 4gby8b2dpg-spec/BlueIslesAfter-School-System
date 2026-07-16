@@ -9,10 +9,13 @@ const PROTECTED_PREFIXES = ["/dashboard"];
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  // Fail safe: if Supabase env vars aren't configured (e.g. before they're set
+  // in the host), skip auth rather than crashing every request (incl. marketing).
+  if (!url || !key) return response;
+
+  const supabase = createServerClient(url, key, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
