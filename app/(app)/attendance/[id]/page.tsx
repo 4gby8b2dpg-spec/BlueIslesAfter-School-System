@@ -82,8 +82,8 @@ export default async function CheckInPage({
       {roster.length === 0 ? (
         <section className="card">
           <p className="empty">
-            No participants are enrolled in this program yet. Enroll students first,
-            then take attendance.
+            No participants are enrolled in this program yet. Enroll participants
+            first, then take attendance.
           </p>
         </section>
       ) : (

@@ -100,7 +100,7 @@ export default function MarketingHome() {
             <div className="hero-visual reveal">
               <div className="photo-frame">
                 <img src="/img/hero-classroom.jpg"
-                     alt="Students gathered around a table in an after-school session, engaged with an instructor" loading="eager" width="1400" height="871" />
+                     alt="Participants gathered around a table in an after-school session, engaged with an instructor" loading="eager" width="1400" height="871" />
               </div>
               
               <aside className="peek" aria-label="Preview of the BlueIsles dashboard">
@@ -116,7 +116,7 @@ export default function MarketingHome() {
                   </div>
                   <div className="kpi risk">
                     <div className="k-val num">14</div>
-                    <div className="k-lab">Students at risk</div>
+                    <div className="k-lab">Participants at risk</div>
                     <div className="k-delta">⚠ follow up</div>
                   </div>
                 </div>
@@ -166,7 +166,7 @@ export default function MarketingHome() {
               <article className="pf reveal">
                 <div className="pain"><b>Planning happens on a whiteboard; conflicts surface too late</b></div>
                 <div className="arrow"></div>
-                <div className="fix">A live calendar flags a double-booked room, staff, or student the moment you schedule it.</div>
+                <div className="fix">A live calendar flags a double-booked room, staff, or participant the moment you schedule it.</div>
               </article>
               <article className="pf reveal">
                 <div className="pain"><b>Feedback is collected sporadically, connected to nothing</b></div>
@@ -179,7 +179,7 @@ export default function MarketingHome() {
                 <div className="fix">Report templates render to polished PDF and Excel, with every metric defined in the footer.</div>
               </article>
               <article className="pf reveal">
-                <div className="pain"><b>No early warning when a student disengages</b></div>
+                <div className="pain"><b>No early warning when a participant disengages</b></div>
                 <div className="arrow"></div>
                 <div className="fix">Risk flags for chronic absence, ratio breaches, and falling ratings surface on the dashboard.</div>
               </article>
@@ -218,15 +218,15 @@ export default function MarketingHome() {
             <div className="split-copy reveal">
               <span className="eyebrow">See every child, not just the totals</span>
               <h2>The numbers stay attached to the kids behind them.</h2>
-              <p>Every attendance mark, enrollment, and survey answer rolls up to a dashboard — and rolls back down to a single student's profile when a director needs to follow up.</p>
+              <p>Every attendance mark, enrollment, and survey answer rolls up to a dashboard — and rolls back down to a single participant's profile when a director needs to follow up.</p>
               <ul>
                 <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Attendance sparkline, flags, and enrollment history on one profile.</span></li>
-                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Chronic-absence follow-up before a student quietly drops off.</span></li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Chronic-absence follow-up before a participant quietly drops off.</span></li>
                 <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Guardian contacts and authorized-pickup, right where staff need them.</span></li>
               </ul>
             </div>
             <div className="s-img reveal">
-              <img src="/img/cand-mentor.jpg" alt="An instructor sitting beside a young student, helping them work through an activity" loading="lazy" width="1200" height="800" />
+              <img src="/img/cand-mentor.jpg" alt="An instructor sitting beside a young participant, helping them work through an activity" loading="lazy" width="1200" height="800" />
             </div>
           </div>
         </section>
@@ -303,7 +303,7 @@ export default function MarketingHome() {
           <div className="wrap">
             <div className="sec-head reveal">
               <span className="eyebrow">Because this is minors' data</span>
-              <h2>Built to be trusted with student records.</h2>
+              <h2>Built to be trusted with participant records.</h2>
               <p>Privacy isn't a settings page bolted on at the end — it's in the schema, the roles, and the logs.</p>
             </div>
             <div className="priv-grid">

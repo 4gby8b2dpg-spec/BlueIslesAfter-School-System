@@ -73,7 +73,7 @@ export default async function DashboardPage() {
         </div>
         <div className={d.kpis.atRisk > 0 ? "kpi warn" : "kpi"}>
           <div className="kpi-val num">{d.kpis.atRisk}</div>
-          <div className="kpi-lab">Students at risk</div>
+          <div className="kpi-lab">Participants at risk</div>
         </div>
       </section>
 
