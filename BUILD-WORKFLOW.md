@@ -6,7 +6,7 @@
 > - **Project:** BlueIsles — after-school program management platform
 > - **Started:** 2026-07-16
 > - **Last updated:** 2026-07-17
-> - **Repo status:** local Next.js app, module-by-module build
+> - **Repo status:** pushed to GitHub + Netlify; MVP modules A–E + H, dashboard, analytics done. Remaining: Settings/Admin (I); Surveys (F, Phase 2)
 
 ---
 
@@ -90,6 +90,8 @@ Each row = one committed step. Times are build order on 2026-07-16.
 | 9 | 23:07 | **Module D** — Attendance | `checkin-roster.tsx`, `attendance/` |
 | 10 | 23:29 | **Module C** — Programs & Sessions | `programs/`, `new-program-form`, `new-session-form` |
 | 11 | 23:36 | **Module H** — Reports | `reports/`, `report-actions.tsx` |
+| 12 | Jul 17 | Copy alignment: "students" → "participants" (kept district Student ID) | app UI + landing prose |
+| 13 | Jul 17 | **Module E** — Calendar (month view) | `calendar/`, categorical palette |
 
 ---
 
