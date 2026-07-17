@@ -6,7 +6,7 @@
 > - **Project:** BlueIsles — after-school program management platform
 > - **Started:** 2026-07-16
 > - **Last updated:** 2026-07-17
-> - **Repo status:** pushed to GitHub + Netlify; MVP modules A–E + H, dashboard, analytics done. Remaining: Settings/Admin (I); Surveys (F, Phase 2)
+> - **Repo status:** live on GitHub + Netlify (login works). Term-1 MVP complete — modules A–E, H, I + dashboard + analytics. Remaining: Surveys (F, Phase 2); in progress: bulk-attendance buttons + weekly timetable view
 
 ---
 
@@ -92,6 +92,9 @@ Each row = one committed step. Times are build order on 2026-07-16.
 | 11 | 23:36 | **Module H** — Reports | `reports/`, `report-actions.tsx` |
 | 12 | Jul 17 | Copy alignment: "students" → "participants" (kept district Student ID) | app UI + landing prose |
 | 13 | Jul 17 | **Module E** — Calendar (month view) | `calendar/`, categorical palette |
+| 14 | Jul 17 | **Module I** — Settings/Admin (users/roles, sites, terms, audit log) | `settings/`, `0004_profile_org_read.sql` |
+| 15 | Jul 17 | Site/term delete + deactivate; fix `.link-btn` scoping | `settings/`, `app.css` |
+| 16 | Jul 17 | **Live on Netlify** — env vars set, production deploy green (login works) | Netlify env + deploy (commit `3e7141e`) |
 
 ---
 

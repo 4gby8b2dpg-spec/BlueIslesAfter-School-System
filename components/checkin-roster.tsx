@@ -31,9 +31,9 @@ export function CheckInRoster({
     setSavedMsg(null);
     setMarks((m) => ({ ...m, [id]: status }));
   }
-  function markAllPresent() {
+  function markAll(status: Status) {
     setSavedMsg(null);
-    setMarks(Object.fromEntries(roster.map((r) => [r.id, "present" as Status])));
+    setMarks(Object.fromEntries(roster.map((r) => [r.id, status])));
   }
 
   const counts = useMemo(() => {
@@ -64,9 +64,21 @@ export function CheckInRoster({
   return (
     <>
       <div className="checkin-toolbar">
-        <button className="btn-ghost" onClick={markAllPresent} type="button">
-          Mark all present
-        </button>
+        <span className="bulk-label">Mark everyone:</span>
+        <div className="bulk-btns">
+          <button className="bulk-btn present" type="button" onClick={() => markAll("present")}>
+            Present
+          </button>
+          <button className="bulk-btn absent" type="button" onClick={() => markAll("absent")}>
+            Absent
+          </button>
+          <button className="bulk-btn late" type="button" onClick={() => markAll("late")}>
+            Late
+          </button>
+          <button className="bulk-btn excused" type="button" onClick={() => markAll("excused")}>
+            Excused
+          </button>
+        </div>
         {savedMsg && <span className="checkin-saved">✓ {savedMsg}</span>}
         {error && (
           <span className="checkin-error" role="alert">

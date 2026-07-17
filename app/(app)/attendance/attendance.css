@@ -79,9 +79,43 @@
 .checkin-toolbar {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 12px;
   flex-wrap: wrap;
+}
+.bulk-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.bulk-btns {
+  display: inline-flex;
+  gap: 6px;
+}
+.bulk-btn {
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  color: #fff;
+  cursor: pointer;
+}
+.bulk-btn.present {
+  background: var(--good);
+}
+.bulk-btn.absent {
+  background: var(--crit);
+}
+.bulk-btn.late {
+  background: var(--warn);
+}
+.bulk-btn.excused {
+  background: var(--faint);
+}
+.bulk-btn:hover {
+  filter: brightness(0.94);
 }
 .checkin-saved {
   color: var(--good);
