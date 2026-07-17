@@ -32,6 +32,39 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Shared app buttons — defined here so every app route (loaded via the
+   layout's app.css) styles them consistently, not just /import. */
+.btn-primary,
+.btn-ghost {
+  font: inherit;
+  font-weight: 600;
+  font-size: 14.5px;
+  padding: 11px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--accent-ink);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--muted);
+}
+.btn-ghost:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
 /* sidebar */
 .app-sidebar {
   border-right: 1px solid var(--border);
