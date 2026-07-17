@@ -104,3 +104,57 @@ export async function addTerm(formData: FormData) {
 
   revalidatePath("/settings");
 }
+
+export async function toggleSiteActive(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  const siteId = String(formData.get("siteId"));
+  const active = String(formData.get("active")) === "true";
+  if (!siteId) return;
+
+  const supabase = await createClient();
+  await supabase.from("sites").update({ is_active: active }).eq("id", siteId).eq("org_id", ctx.orgId);
+  await logAudit(supabase, ctx.orgId, ctx.userId, "update", "sites", siteId, null, { is_active: active });
+  revalidatePath("/settings");
+}
+
+export async function deleteSite(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  const siteId = String(formData.get("siteId"));
+  if (!siteId) return;
+
+  const supabase = await createClient();
+  // Guard: don't delete a site programs still point at.
+  const { count } = await supabase
+    .from("programs")
+    .select("id", { count: "exact", head: true })
+    .eq("org_id", ctx.orgId)
+    .eq("site_id", siteId);
+  if (count && count > 0) return;
+
+  const { data: before } = await supabase.from("sites").select("name").eq("id", siteId).maybeSingle();
+  await supabase.from("sites").delete().eq("id", siteId).eq("org_id", ctx.orgId);
+  await logAudit(supabase, ctx.orgId, ctx.userId, "delete", "sites", siteId, before, null);
+  revalidatePath("/settings");
+}
+
+export async function deleteTerm(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  const termId = String(formData.get("termId"));
+  if (!termId) return;
+
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("programs")
+    .select("id", { count: "exact", head: true })
+    .eq("org_id", ctx.orgId)
+    .eq("term_id", termId);
+  if (count && count > 0) return;
+
+  const { data: before } = await supabase.from("terms").select("name").eq("id", termId).maybeSingle();
+  await supabase.from("terms").delete().eq("id", termId).eq("org_id", ctx.orgId);
+  await logAudit(supabase, ctx.orgId, ctx.userId, "delete", "terms", termId, before, null);
+  revalidatePath("/settings");
+}

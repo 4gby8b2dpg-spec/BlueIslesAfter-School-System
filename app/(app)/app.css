@@ -65,6 +65,25 @@
   border-color: var(--accent);
 }
 
+/* Inline text-style action button (withdraw, roll back, deactivate, delete).
+   Shared app-wide so it styles on every route, not just /import. */
+.link-btn {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--warn);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+.link-btn:hover {
+  text-decoration: underline;
+}
+.link-btn.danger {
+  color: var(--crit);
+}
+
 /* Shared detail-page layout primitives (used by participant + program
    detail). Defined app-wide so they style on every route. */
 .profile-back {

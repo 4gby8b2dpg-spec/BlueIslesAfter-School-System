@@ -1,6 +1,14 @@
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
-import { updateMemberRole, setMemberStatus, addSite, addTerm } from "./actions";
+import {
+  updateMemberRole,
+  setMemberStatus,
+  addSite,
+  addTerm,
+  toggleSiteActive,
+  deleteSite,
+  deleteTerm,
+} from "./actions";
 import "./settings.css";
 
 export const dynamic = "force-dynamic";
@@ -28,13 +36,14 @@ export default async function SettingsPage() {
   }
 
   const supabase = await createClient();
-  const [membersRes, sitesRes, termsRes, auditRes] = await Promise.all([
+  const [membersRes, sitesRes, termsRes, programsRes, auditRes] = await Promise.all([
     supabase
       .from("memberships")
       .select("id, role, status, user_id, profiles(email, full_name)")
       .eq("org_id", ctx.orgId),
     supabase.from("sites").select("id, name, is_active").eq("org_id", ctx.orgId).order("name"),
     supabase.from("terms").select("id, name, starts_on, ends_on").eq("org_id", ctx.orgId).order("starts_on"),
+    supabase.from("programs").select("site_id, term_id").eq("org_id", ctx.orgId),
     supabase
       .from("audit_log")
       .select("id, action, entity_table, at, profiles(full_name)")
@@ -52,6 +61,13 @@ export default async function SettingsPage() {
   }[];
   const sites = sitesRes.data ?? [];
   const terms = termsRes.data ?? [];
+  const programs = programsRes.data ?? [];
+  const siteUse = new Map<string, number>();
+  const termUse = new Map<string, number>();
+  for (const p of programs) {
+    if (p.site_id) siteUse.set(p.site_id, (siteUse.get(p.site_id) ?? 0) + 1);
+    if (p.term_id) termUse.set(p.term_id, (termUse.get(p.term_id) ?? 0) + 1);
+  }
   const audit = (auditRes.data ?? []) as unknown as {
     id: string;
     action: string;
@@ -147,14 +163,38 @@ export default async function SettingsPage() {
             <span className="card-sub">{sites.length}</span>
           </div>
           <ul className="settings-list">
-            {sites.map((s) => (
-              <li key={s.id} className="settings-list-row">
-                <span>{s.name}</span>
-                <span className={s.is_active ? "member-status active" : "member-status deactivated"}>
-                  {s.is_active ? "active" : "inactive"}
-                </span>
-              </li>
-            ))}
+            {sites.map((s) => {
+              const used = siteUse.get(s.id) ?? 0;
+              return (
+                <li key={s.id} className="settings-list-row">
+                  <span>{s.name}</span>
+                  <span className="settings-row-actions">
+                    <span className={s.is_active ? "member-status active" : "member-status deactivated"}>
+                      {s.is_active ? "active" : "inactive"}
+                    </span>
+                    <form action={toggleSiteActive}>
+                      <input type="hidden" name="siteId" value={s.id} />
+                      <input type="hidden" name="active" value={(!s.is_active).toString()} />
+                      <button className="link-btn" type="submit">
+                        {s.is_active ? "Deactivate" : "Reactivate"}
+                      </button>
+                    </form>
+                    {used > 0 ? (
+                      <span className="in-use" title="Reassign or remove its programs first">
+                        {used} program{used === 1 ? "" : "s"}
+                      </span>
+                    ) : (
+                      <form action={deleteSite}>
+                        <input type="hidden" name="siteId" value={s.id} />
+                        <button className="link-btn danger" type="submit">
+                          Delete
+                        </button>
+                      </form>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
             {sites.length === 0 && <li className="empty">No sites yet.</li>}
           </ul>
           <form action={addSite} className="inline-add">
@@ -171,14 +211,31 @@ export default async function SettingsPage() {
             <span className="card-sub">{terms.length}</span>
           </div>
           <ul className="settings-list">
-            {terms.map((t) => (
-              <li key={t.id} className="settings-list-row">
-                <span>{t.name}</span>
-                <span className="settings-muted">
-                  {t.starts_on ?? "—"} → {t.ends_on ?? "—"}
-                </span>
-              </li>
-            ))}
+            {terms.map((t) => {
+              const used = termUse.get(t.id) ?? 0;
+              return (
+                <li key={t.id} className="settings-list-row">
+                  <span>{t.name}</span>
+                  <span className="settings-row-actions">
+                    <span className="settings-muted">
+                      {t.starts_on ?? "—"} → {t.ends_on ?? "—"}
+                    </span>
+                    {used > 0 ? (
+                      <span className="in-use" title="Reassign or remove its programs first">
+                        {used} program{used === 1 ? "" : "s"}
+                      </span>
+                    ) : (
+                      <form action={deleteTerm}>
+                        <input type="hidden" name="termId" value={t.id} />
+                        <button className="link-btn danger" type="submit">
+                          Delete
+                        </button>
+                      </form>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
             {terms.length === 0 && <li className="empty">No terms yet.</li>}
           </ul>
           <form action={addTerm} className="inline-add term-add">

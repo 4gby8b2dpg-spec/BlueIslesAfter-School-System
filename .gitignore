@@ -42,3 +42,7 @@ next-env.d.ts
 
 # Claude Code local (machine-specific) settings
 .claude/settings.local.json
+
+# Deploy artifacts / archives (Netlify CLI leaves a repo zip)
+*.zip
+.netlify/

@@ -313,19 +313,7 @@
 .status.failed {
   color: var(--crit);
 }
-.link-btn {
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--warn);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  padding: 0;
-}
-.link-btn:hover {
-  text-decoration: underline;
-}
+/* .link-btn now lives in the shared app stylesheet (app.css). */
 
 @media (max-width: 720px) {
   .review-summary {

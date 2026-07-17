@@ -123,6 +123,18 @@
 .settings-list-row:last-child {
   border-bottom: 0;
 }
+.settings-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.settings-row-actions .link-btn.danger {
+  color: var(--crit);
+}
+.in-use {
+  font-size: 12px;
+  color: var(--faint);
+}
 
 .inline-add {
   display: flex;
