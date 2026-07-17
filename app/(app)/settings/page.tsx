@@ -1,8 +1,236 @@
-import { ComingSoon } from "@/components/coming-soon";
-import { NAV } from "@/lib/nav";
+import { requireAppContext } from "@/lib/auth-context";
+import { createClient } from "@/lib/supabase/server";
+import { updateMemberRole, setMemberStatus, addSite, addTerm } from "./actions";
+import "./settings.css";
 
-const item = NAV.find((n) => n.href === "/settings")!;
+export const dynamic = "force-dynamic";
 
-export default function Page() {
-  return <ComingSoon title={item.title} blurb={item.blurb} />;
+const ROLES = ["admin", "director", "staff", "viewer"];
+
+export default async function SettingsPage() {
+  const ctx = await requireAppContext();
+
+  if (ctx.role !== "admin") {
+    return (
+      <main className="dash">
+        <div className="dash-head">
+          <h1>Settings</h1>
+          <p>Administration is limited to admins.</p>
+        </div>
+        <section className="card">
+          <p className="empty">
+            You&rsquo;re signed in as <strong>{ctx.role}</strong>. Ask an admin for access
+            to user management, sites, terms, and the audit log.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
+  const supabase = await createClient();
+  const [membersRes, sitesRes, termsRes, auditRes] = await Promise.all([
+    supabase
+      .from("memberships")
+      .select("id, role, status, user_id, profiles(email, full_name)")
+      .eq("org_id", ctx.orgId),
+    supabase.from("sites").select("id, name, is_active").eq("org_id", ctx.orgId).order("name"),
+    supabase.from("terms").select("id, name, starts_on, ends_on").eq("org_id", ctx.orgId).order("starts_on"),
+    supabase
+      .from("audit_log")
+      .select("id, action, entity_table, at, profiles(full_name)")
+      .eq("org_id", ctx.orgId)
+      .order("at", { ascending: false })
+      .limit(30),
+  ]);
+
+  const members = (membersRes.data ?? []) as unknown as {
+    id: string;
+    role: string;
+    status: string;
+    user_id: string;
+    profiles: { email: string | null; full_name: string | null } | null;
+  }[];
+  const sites = sitesRes.data ?? [];
+  const terms = termsRes.data ?? [];
+  const audit = (auditRes.data ?? []) as unknown as {
+    id: string;
+    action: string;
+    entity_table: string | null;
+    at: string;
+    profiles: { full_name: string | null } | null;
+  }[];
+
+  return (
+    <main className="dash">
+      <div className="dash-head">
+        <h1>Settings</h1>
+        <p>Manage users, sites, terms, and review the audit log.</p>
+      </div>
+
+      {/* USERS */}
+      <section className="card">
+        <div className="card-head">
+          <h2>Users &amp; roles</h2>
+          <span className="card-sub">{members.length} in this organization</span>
+        </div>
+        <div className="settings-scroll">
+          <table className="settings-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {members.map((m) => {
+                const isSelf = m.user_id === ctx.userId;
+                return (
+                  <tr key={m.id}>
+                    <td>
+                      {m.profiles?.full_name ?? "—"}
+                      {isSelf && <span className="you-chip">you</span>}
+                    </td>
+                    <td className="settings-muted">{m.profiles?.email ?? "—"}</td>
+                    <td>
+                      <form action={updateMemberRole} className="inline-form">
+                        <input type="hidden" name="membershipId" value={m.id} />
+                        <select name="role" defaultValue={m.role} aria-label={`Role for ${m.profiles?.full_name ?? "member"}`}>
+                          {ROLES.map((r) => (
+                            <option key={r} value={r}>
+                              {r}
+                            </option>
+                          ))}
+                        </select>
+                        <button className="mini-btn" type="submit">
+                          Save
+                        </button>
+                      </form>
+                    </td>
+                    <td>
+                      <span className={`member-status ${m.status}`}>{m.status}</span>
+                    </td>
+                    <td className="right">
+                      {!isSelf && (
+                        <form action={setMemberStatus}>
+                          <input type="hidden" name="membershipId" value={m.id} />
+                          <input
+                            type="hidden"
+                            name="status"
+                            value={m.status === "deactivated" ? "active" : "deactivated"}
+                          />
+                          <button className="link-btn" type="submit">
+                            {m.status === "deactivated" ? "Reactivate" : "Deactivate"}
+                          </button>
+                        </form>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p className="settings-note">
+          New members sign in with a Supabase account, then appear here to be assigned a
+          role. Email invitations are a follow-up (they need the server service-role key).
+        </p>
+      </section>
+
+      {/* SITES + TERMS */}
+      <div className="settings-grid">
+        <section className="card">
+          <div className="card-head">
+            <h2>Sites</h2>
+            <span className="card-sub">{sites.length}</span>
+          </div>
+          <ul className="settings-list">
+            {sites.map((s) => (
+              <li key={s.id} className="settings-list-row">
+                <span>{s.name}</span>
+                <span className={s.is_active ? "member-status active" : "member-status deactivated"}>
+                  {s.is_active ? "active" : "inactive"}
+                </span>
+              </li>
+            ))}
+            {sites.length === 0 && <li className="empty">No sites yet.</li>}
+          </ul>
+          <form action={addSite} className="inline-add">
+            <input name="name" placeholder="New site name" required />
+            <button className="btn-primary" type="submit">
+              Add site
+            </button>
+          </form>
+        </section>
+
+        <section className="card">
+          <div className="card-head">
+            <h2>Terms</h2>
+            <span className="card-sub">{terms.length}</span>
+          </div>
+          <ul className="settings-list">
+            {terms.map((t) => (
+              <li key={t.id} className="settings-list-row">
+                <span>{t.name}</span>
+                <span className="settings-muted">
+                  {t.starts_on ?? "—"} → {t.ends_on ?? "—"}
+                </span>
+              </li>
+            ))}
+            {terms.length === 0 && <li className="empty">No terms yet.</li>}
+          </ul>
+          <form action={addTerm} className="inline-add term-add">
+            <input name="name" placeholder="e.g. Fall 2026" required />
+            <input name="startsOn" type="date" aria-label="Term start" />
+            <input name="endsOn" type="date" aria-label="Term end" />
+            <button className="btn-primary" type="submit">
+              Add term
+            </button>
+          </form>
+        </section>
+      </div>
+
+      {/* AUDIT LOG */}
+      <section className="card">
+        <div className="card-head">
+          <h2>Audit log</h2>
+          <span className="card-sub">Most recent 30</span>
+        </div>
+        {audit.length === 0 ? (
+          <p className="empty">
+            No activity logged yet. Changes made here (roles, sites, terms) are recorded.
+          </p>
+        ) : (
+          <div className="settings-scroll">
+            <table className="settings-table">
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Who</th>
+                  <th>Action</th>
+                  <th>Entity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {audit.map((a) => (
+                  <tr key={a.id}>
+                    <td className="settings-muted num">
+                      {new Date(a.at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
+                    </td>
+                    <td>{a.profiles?.full_name ?? "—"}</td>
+                    <td>
+                      <span className={`audit-action ${a.action}`}>{a.action}</span>
+                    </td>
+                    <td className="settings-muted">{a.entity_table ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </main>
+  );
 }
