@@ -26,23 +26,25 @@ function band(rate: number | null): { label: string; cls: string } {
 export default async function ParticipantsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; grade?: string; program?: string }>;
+  searchParams: Promise<{ q?: string; grade?: string; program?: string; site?: string }>;
 }) {
   const ctx = await requireAppContext();
   const sp = await searchParams;
   const q = (sp.q ?? "").trim().toLowerCase();
   const gradeFilter = sp.grade ?? "";
   const programFilter = sp.program ?? "";
+  const siteFilter = sp.site ?? "";
 
   const supabase = await createClient();
-  const [partsRes, enrollRes, programsRes, attRes, flagsRes] = await Promise.all([
+  const [partsRes, enrollRes, programsRes, sitesRes, attRes, flagsRes] = await Promise.all([
     supabase
       .from("participants")
       .select("id, first_name, last_name, grade, school, date_of_birth")
       .eq("org_id", ctx.orgId)
       .is("deleted_at", null),
     supabase.from("enrollments").select("participant_id, program_id, status").eq("org_id", ctx.orgId),
-    supabase.from("programs").select("id, name").eq("org_id", ctx.orgId),
+    supabase.from("programs").select("id, name, site_id").eq("org_id", ctx.orgId),
+    supabase.from("sites").select("id, name").eq("org_id", ctx.orgId).order("name"),
     supabase.from("attendance_records").select("participant_id, status").eq("org_id", ctx.orgId),
     supabase.from("flags").select("participant_id").eq("org_id", ctx.orgId).is("resolved_at", null),
   ]);
@@ -50,14 +52,17 @@ export default async function ParticipantsPage({
   const participants = partsRes.data ?? [];
   const enrollments = enrollRes.data ?? [];
   const programs = programsRes.data ?? [];
+  const sites = sitesRes.data ?? [];
   const attendance = attRes.data ?? [];
   const flags = flagsRes.data ?? [];
 
   const programName = new Map(programs.map((p) => [p.id, p.name]));
+  const programSite = new Map(programs.map((p) => [p.id, p.site_id]));
 
   // per-participant aggregates
   const enrollByPart = new Map<string, string[]>(); // active program names
   const enrolledProgramIds = new Map<string, Set<string>>();
+  const enrolledSiteIds = new Map<string, Set<string>>();
   for (const e of enrollments) {
     if (e.status !== "enrolled") continue;
     const arr = enrollByPart.get(e.participant_id) ?? [];
@@ -66,6 +71,12 @@ export default async function ParticipantsPage({
     const set = enrolledProgramIds.get(e.participant_id) ?? new Set();
     set.add(e.program_id);
     enrolledProgramIds.set(e.participant_id, set);
+    const siteId = programSite.get(e.program_id);
+    if (siteId) {
+      const sset = enrolledSiteIds.get(e.participant_id) ?? new Set<string>();
+      sset.add(siteId);
+      enrolledSiteIds.set(e.participant_id, sset);
+    }
   }
   const attByPart = new Map<string, { pres: number; tot: number }>();
   for (const a of attendance) {
@@ -99,7 +110,10 @@ export default async function ParticipantsPage({
   if (gradeFilter) rows = rows.filter((r) => r.grade === gradeFilter);
   if (programFilter)
     rows = rows.filter((r) => enrolledProgramIds.get(r.id)?.has(programFilter));
+  if (siteFilter) rows = rows.filter((r) => enrolledSiteIds.get(r.id)?.has(siteFilter));
   rows.sort((a, b) => a.name.localeCompare(b.name));
+
+  const anyFilter = q || gradeFilter || programFilter || siteFilter;
 
   return (
     <main className="dash">
@@ -108,7 +122,7 @@ export default async function ParticipantsPage({
         <p>
           {rows.length} of {participants.length} participant
           {participants.length === 1 ? "" : "s"}
-          {q || gradeFilter || programFilter ? " (filtered)" : ""}.
+          {anyFilter ? " (filtered)" : ""}.
         </p>
       </div>
 
@@ -121,6 +135,14 @@ export default async function ParticipantsPage({
             defaultValue={sp.q ?? ""}
             aria-label="Search participants by name"
           />
+          <select name="site" defaultValue={siteFilter} aria-label="Filter by site">
+            <option value="">All sites</option>
+            {sites.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
           <select name="grade" defaultValue={gradeFilter} aria-label="Filter by grade">
             <option value="">All grades</option>
             {grades.map((g) => (
@@ -140,7 +162,7 @@ export default async function ParticipantsPage({
           <button className="btn-primary" type="submit">
             Apply
           </button>
-          {(q || gradeFilter || programFilter) && (
+          {anyFilter && (
             <Link className="roster-clear" href="/participants">
               Clear
             </Link>

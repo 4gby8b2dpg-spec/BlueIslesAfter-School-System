@@ -34,6 +34,12 @@ export const NAV: NavItem[] = [
     blurb: "Month, week, and day views; drag-to-reschedule; closures that suppress false alerts.",
   },
   {
+    href: "/timetable",
+    label: "Timetable",
+    title: "Weekly Timetable",
+    blurb: "Set up recurring weekly program schedules and see the week at a glance, by site.",
+  },
+  {
     href: "/surveys",
     label: "Surveys",
     title: "Surveys & Feedback",
