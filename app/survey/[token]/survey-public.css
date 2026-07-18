@@ -1,0 +1,179 @@
+/* Public survey form — self-contained (this route is outside the app shell). */
+.sv-wrap {
+  min-height: 100dvh;
+  padding: 32px 20px 60px;
+  background:
+    radial-gradient(120% 120% at 88% -10%, #0f5a5a 0%, transparent 55%),
+    linear-gradient(160deg, #0b3a4a 0%, #072a36 100%);
+  font-family: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+.sv-card {
+  width: 100%;
+  max-width: 560px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(7, 42, 54, 0.35);
+  padding: 32px 30px;
+  color: #14201f;
+}
+.sv-brand {
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 560;
+  font-size: 17px;
+  color: #0b6e66;
+  margin-bottom: 14px;
+}
+.sv-card h1 {
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 560;
+  font-size: 26px;
+  margin: 0;
+  line-height: 1.15;
+}
+.sv-desc {
+  color: #47595a;
+  font-size: 15px;
+  margin: 10px 0 0;
+}
+
+.sv-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-top: 24px;
+}
+.sv-q {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.sv-q legend {
+  font-size: 15.5px;
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 4px;
+}
+.sv-qnum {
+  color: #0b6e66;
+  font-weight: 700;
+  margin-right: 4px;
+}
+.sv-req {
+  color: #b3261e;
+  margin-left: 3px;
+}
+.sv-scale-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sv-scale-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: #657a78;
+}
+.sv-q input[type="text"],
+.sv-q textarea {
+  font: inherit;
+  padding: 11px 13px;
+  border: 1px solid #dfe7e5;
+  border-radius: 10px;
+  background: #f4f7f6;
+  color: #14201f;
+  width: 100%;
+}
+.sv-opt {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 15px;
+  padding: 4px 0;
+}
+.sv-scale {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.sv-scale-btn {
+  font: inherit;
+  font-weight: 700;
+  min-width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid #dfe7e5;
+  background: #f4f7f6;
+  color: #47595a;
+  cursor: pointer;
+}
+.sv-scale-btn.active {
+  background: #0d9488;
+  border-color: #0d9488;
+  color: #fff;
+}
+.sv-submit {
+  font: inherit;
+  font-weight: 700;
+  font-size: 15.5px;
+  padding: 13px;
+  border-radius: 999px;
+  border: 0;
+  background: #d97706;
+  color: #26140a;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.sv-submit:hover {
+  background: #b45309;
+  color: #fff;
+}
+.sv-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.sv-error {
+  color: #b3261e;
+  background: #fbebea;
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 10px 13px;
+  border-radius: 9px;
+  margin: 0;
+}
+
+.sv-done {
+  text-align: center;
+  padding: 20px 0;
+}
+.sv-check {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: #2e7d45;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  margin: 0 auto 12px;
+}
+.sv-done h2 {
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 560;
+  font-size: 24px;
+  margin: 0;
+}
+.sv-done p {
+  color: #47595a;
+  margin: 6px 0 0;
+}
+
+.sv-unavailable {
+  text-align: center;
+}

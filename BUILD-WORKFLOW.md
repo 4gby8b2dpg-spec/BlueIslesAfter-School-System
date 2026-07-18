@@ -6,7 +6,7 @@
 > - **Project:** BlueIsles — after-school program management platform
 > - **Started:** 2026-07-16
 > - **Last updated:** 2026-07-17
-> - **Repo status:** live on GitHub + Netlify (login works). Term-1 MVP complete — modules A–E, H, I + dashboard + analytics. Remaining: Surveys (F, Phase 2); in progress: bulk-attendance buttons + weekly timetable view
+> - **Repo status:** live on GitHub + Netlify (login works). Term-1 MVP complete — modules A–F, H, I + dashboard + analytics. Surveys (F) now built: builder, public token-based response form, per-question results + xlsx export. Remaining: pre/post survey pairing (Phase 2)
 
 ---
 
@@ -64,7 +64,7 @@ Supabase dashboard → Project Settings → API. Production values go in the
 | `app/login/`, `app/no-org/` | Auth + onboarding edges |
 | `components/` | Shared UI (`app-nav`, `import-wizard`, `checkin-roster`, forms, `charts/`, `ui/`) |
 | `lib/` | `supabase/` (client/server/middleware), `nav`, `auth-context`, `dashboard`, `metrics`, `providers` |
-| `supabase/migrations/` | Versioned SQL schema (`0001_init`, `0002_profile_on_signup`, `0003_ai_analytics`) |
+| `supabase/migrations/` | Versioned SQL schema (`0001_init`, `0002_profile_on_signup`, `0003_ai_analytics`, `0004_profile_org_read`, `0005_survey_public`) |
 | `supabase/seed.sql` | Demo data |
 | `sample-data/` | `participants-sample.csv` for import testing |
 | `blueprint.md` | Original product/feature blueprint |
