@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getOrgFlags, FLAG_LABEL } from "@/lib/flags";
 
 // Live dashboard data (blueprint §5). All reads run through RLS as the signed-in
 // user, so this only ever returns the caller's org data.
@@ -25,7 +26,7 @@ export async function getDashboardData(orgId: string) {
   const todayEnd = new Date(todayStart.getTime() + DAY);
   const trendStart = new Date(now.getTime() - 56 * DAY); // 8 weeks
 
-  const [programsRes, enrollmentsRes, sessionsRes, attendanceRes, flagsRes, importsRes] =
+  const [programsRes, enrollmentsRes, sessionsRes, attendanceRes, flags, importsRes] =
     await Promise.all([
       supabase
         .from("programs")
@@ -47,12 +48,8 @@ export async function getDashboardData(orgId: string) {
         .select("status, sessions(starts_at)")
         .eq("org_id", orgId)
         .gte("created_at", trendStart.toISOString()),
-      supabase
-        .from("flags")
-        .select("id, flag_type, severity, participant_id, program_id, raised_at")
-        .eq("org_id", orgId)
-        .is("resolved_at", null)
-        .order("severity", { ascending: false }),
+      // Derived flags — always current, computed from attendance/staffing.
+      getOrgFlags(orgId),
       supabase
         .from("imports")
         .select("id, file_name, status, rows_committed, created_at")
@@ -65,7 +62,6 @@ export async function getDashboardData(orgId: string) {
   const enrollments = enrollmentsRes.data ?? [];
   const sessions = sessionsRes.data ?? [];
   const attendance = attendanceRes.data ?? [];
-  const flags = flagsRes.data ?? [];
   const imports = importsRes.data ?? [];
 
   // ---- KPIs ----
@@ -75,7 +71,7 @@ export async function getDashboardData(orgId: string) {
     const t = new Date(s.starts_at).getTime();
     return t >= weekStart.getTime() && t < weekEnd.getTime();
   }).length;
-  const atRisk = flags.filter((f) => f.flag_type === "chronic_absence").length;
+  const atRisk = flags.filter((f) => f.type === "chronic_absence").length;
 
   // attendance rate, trailing 4 weeks
   const fourWeeksAgo = now.getTime() - 28 * DAY;
@@ -137,18 +133,17 @@ export async function getDashboardData(orgId: string) {
       room: s.room ?? "—",
     }));
 
-  // ---- flags for the rail (label + severity) ----
-  const FLAG_LABEL: Record<string, string> = {
-    chronic_absence: "chronic-absence flag",
-    missing_attendance: "session missing attendance",
-    ratio_breach: "staff ratio breach",
-    capacity_waitlist: "program at capacity / waitlist",
-    low_survey_rating: "low survey rating",
-  };
-  const alerts = flags.map((f) => ({
-    id: f.id,
-    severity: f.severity as "info" | "warning" | "critical",
-    label: FLAG_LABEL[f.flag_type] ?? f.flag_type,
+  // ---- flags for the rail (subject + detail + severity) ----
+  const alerts = flags.slice(0, 12).map((f, i) => ({
+    id: `${f.type}-${f.participantId ?? f.sessionId ?? i}`,
+    severity: f.severity,
+    label: `${f.participantName ?? f.programName ?? FLAG_LABEL[f.type]} — ${FLAG_LABEL[f.type].toLowerCase()} (${f.detail})`,
+    href:
+      f.type === "chronic_absence" && f.participantId
+        ? `/participants/${f.participantId}`
+        : f.type === "ratio_breach" && f.sessionId
+          ? `/attendance/${f.sessionId}`
+          : undefined,
   }));
 
   return {

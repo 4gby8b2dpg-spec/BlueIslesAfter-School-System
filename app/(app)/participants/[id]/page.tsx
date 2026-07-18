@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { enrollParticipant, withdrawEnrollment } from "../actions";
+import { getParticipantFlag, FLAG_LABEL } from "@/lib/flags";
 import "../participants.css";
 
 export const dynamic = "force-dynamic";
@@ -61,12 +62,7 @@ export default async function ParticipantProfile({
       .select("relationship, guardians(first_name, last_name, phone, email, is_emergency_contact, authorized_pickup)")
       .eq("org_id", ctx.orgId)
       .eq("participant_id", id),
-    supabase
-      .from("flags")
-      .select("flag_type, severity, raised_at")
-      .eq("org_id", ctx.orgId)
-      .eq("participant_id", id)
-      .is("resolved_at", null),
+    getParticipantFlag(ctx.orgId, id),
     supabase.from("programs").select("id, name").eq("org_id", ctx.orgId),
   ]);
 
@@ -92,7 +88,7 @@ export default async function ParticipantProfile({
       authorized_pickup: boolean;
     } | null;
   }[];
-  const flags = flagsRes.data ?? [];
+  const flag = flagsRes; // derived chronic-absence flag, or null
   const programs = programsRes.data ?? [];
 
   // attendance rate + recent
@@ -144,7 +140,7 @@ export default async function ParticipantProfile({
           <span className={`att-band ${rateCls} num`}>
             {rate == null ? "No attendance" : `${rate}% attendance`}
           </span>
-          {flags.length > 0 && <span className="risk-chip">at risk · {flags.length}</span>}
+          {flag && <span className="risk-chip">at risk</span>}
           <span className={p.photo_consent ? "consent-chip yes" : "consent-chip no"}>
             {p.photo_consent ? "photo consent" : "no photo consent"}
           </span>
@@ -263,15 +259,13 @@ export default async function ParticipantProfile({
           <div className="card-head">
             <h2>Flags</h2>
           </div>
-          {flags.length === 0 ? (
+          {!flag ? (
             <p className="empty good">No open flags.</p>
           ) : (
             <ul className="flag-list">
-              {flags.map((f, i) => (
-                <li key={i} className={`flag-row ${f.severity}`}>
-                  {f.flag_type.replace(/_/g, " ")}
-                </li>
-              ))}
+              <li className={`flag-row ${flag.severity}`}>
+                {FLAG_LABEL[flag.type]} — {flag.detail}
+              </li>
             </ul>
           )}
         </section>

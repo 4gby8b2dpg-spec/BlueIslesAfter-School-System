@@ -5,8 +5,8 @@
 >
 > - **Project:** BlueIsles — after-school program management platform
 > - **Started:** 2026-07-16
-> - **Last updated:** 2026-07-17
-> - **Repo status:** live on GitHub + Netlify (login works). Term-1 MVP complete — modules A–F, H, I + dashboard + analytics. Surveys (F) now built: builder, public token-based response form, per-question results + xlsx export. Remaining: pre/post survey pairing (Phase 2)
+> - **Last updated:** 2026-07-18
+> - **Repo status:** live on GitHub + Netlify (login works). Term-1 MVP complete — modules A–F, H, I + dashboard + analytics. Surveys (F) built (builder, public token form, results + xlsx). Phase 2 in progress: **chronic-absence + ratio flag engine** (`lib/flags.ts`, derived/live — feeds dashboard rail + at-risk KPI + participant flags, clickable alerts). Next: recognition/rewards, then pre/post survey pairing
 
 ---
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
+import { computeChronicAbsence } from "@/lib/flags";
 import "./participants.css";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ export default async function ParticipantsPage({
     supabase.from("programs").select("id, name, site_id").eq("org_id", ctx.orgId),
     supabase.from("sites").select("id, name").eq("org_id", ctx.orgId).order("name"),
     supabase.from("attendance_records").select("participant_id, status").eq("org_id", ctx.orgId),
-    supabase.from("flags").select("participant_id").eq("org_id", ctx.orgId).is("resolved_at", null),
+    computeChronicAbsence(ctx.orgId),
   ]);
 
   const participants = partsRes.data ?? [];
@@ -54,7 +55,7 @@ export default async function ParticipantsPage({
   const programs = programsRes.data ?? [];
   const sites = sitesRes.data ?? [];
   const attendance = attRes.data ?? [];
-  const flags = flagsRes.data ?? [];
+  const flags = flagsRes;
 
   const programName = new Map(programs.map((p) => [p.id, p.name]));
   const programSite = new Map(programs.map((p) => [p.id, p.site_id]));
@@ -87,7 +88,7 @@ export default async function ParticipantsPage({
     } else if (a.status === "absent") cur.tot++;
     attByPart.set(a.participant_id, cur);
   }
-  const flaggedParts = new Set(flags.map((f) => f.participant_id).filter(Boolean));
+  const flaggedParts = new Set(flags.map((f) => f.participantId).filter(Boolean));
 
   const grades = [...new Set(participants.map((p) => p.grade).filter(Boolean))].sort();
 
