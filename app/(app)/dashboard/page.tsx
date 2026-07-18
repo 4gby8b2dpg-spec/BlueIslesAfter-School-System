@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAppContext } from "@/lib/auth-context";
 import { getDashboardData } from "@/lib/dashboard";
 
@@ -138,10 +139,21 @@ export default async function DashboardPage() {
               <ul className="alerts">
                 {d.alerts.map((a) => (
                   <li key={a.id} className={`alert ${a.severity}`}>
-                    <span className="alert-ic" aria-hidden="true">
-                      {a.severity === "critical" ? "!" : a.severity === "warning" ? "▲" : "i"}
-                    </span>
-                    <span className="alert-txt">{a.label}</span>
+                    {a.href ? (
+                      <Link href={a.href} className="alert-link">
+                        <span className="alert-ic" aria-hidden="true">
+                          {a.severity === "critical" ? "!" : a.severity === "warning" ? "▲" : "i"}
+                        </span>
+                        <span className="alert-txt">{a.label}</span>
+                      </Link>
+                    ) : (
+                      <>
+                        <span className="alert-ic" aria-hidden="true">
+                          {a.severity === "critical" ? "!" : a.severity === "warning" ? "▲" : "i"}
+                        </span>
+                        <span className="alert-txt">{a.label}</span>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>

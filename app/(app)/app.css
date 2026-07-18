@@ -461,6 +461,17 @@
 .alert-txt {
   text-transform: capitalize;
 }
+.alert-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+.alert-link:hover .alert-txt {
+  text-decoration: underline;
+}
 
 /* schedule + imports */
 .sched-row {
