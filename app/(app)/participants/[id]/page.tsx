@@ -4,6 +4,7 @@ import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { enrollParticipant, withdrawEnrollment } from "../actions";
 import { getParticipantFlag, FLAG_LABEL } from "@/lib/flags";
+import { getParticipantBadges } from "@/lib/recognition";
 import "../participants.css";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ export default async function ParticipantProfile({
 
   if (!p) notFound();
 
-  const [enrollRes, attRes, guardiansRes, flagsRes, programsRes] = await Promise.all([
+  const [enrollRes, attRes, guardiansRes, flagsRes, programsRes, badges] = await Promise.all([
     supabase
       .from("enrollments")
       .select("id, status, enrolled_on, program_id, programs(name, category)")
@@ -64,6 +65,7 @@ export default async function ParticipantProfile({
       .eq("participant_id", id),
     getParticipantFlag(ctx.orgId, id),
     supabase.from("programs").select("id, name").eq("org_id", ctx.orgId),
+    getParticipantBadges(ctx.orgId, id),
   ]);
 
   const enrollments = (enrollRes.data ?? []) as unknown as {
@@ -146,6 +148,35 @@ export default async function ParticipantProfile({
           </span>
         </div>
       </section>
+
+      {badges.length > 0 && (
+        <section className="card recognition-card">
+          <div className="card-head">
+            <h2>Recognition</h2>
+            <span className="card-sub">{badges.length}</span>
+          </div>
+          <ul className="badge-shelf">
+            {badges.map((b) => (
+              <li key={b.key} className={`badge badge-${b.kind}`}>
+                <span className="badge-emoji" aria-hidden="true">
+                  {b.emoji}
+                </span>
+                <span className="badge-body">
+                  <span className="badge-label">{b.label}</span>
+                  <span className="badge-detail">{b.detail}</span>
+                </span>
+                <Link
+                  href={`/recognition/certificate/${id}?badge=${b.key}`}
+                  className="badge-cert"
+                  title="Open certificate"
+                >
+                  Certificate →
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="profile-grid">
         {/* enrollments */}

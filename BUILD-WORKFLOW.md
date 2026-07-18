@@ -94,7 +94,14 @@ Each row = one committed step. Times are build order on 2026-07-16.
 | 13 | Jul 17 | **Module E** — Calendar (month view) | `calendar/`, categorical palette |
 | 14 | Jul 17 | **Module I** — Settings/Admin (users/roles, sites, terms, audit log) | `settings/`, `0004_profile_org_read.sql` |
 | 15 | Jul 17 | Site/term delete + deactivate; fix `.link-btn` scoping | `settings/`, `app.css` |
-| 16 | Jul 17 | **Live on Netlify** — env vars set, production deploy green (login works) | Netlify env + deploy (commit `3e7141e`) |
+| 16 | Jul 17 | **Live on Netlify** — env vars set, production deploy green (login works) | Netlify env + deploy |
+| 17 | Jul 17 | Attendance: bulk mark present/absent/late/excused | `attendance/`, `checkin-roster` (`662d70b`) |
+| 18 | Jul 17 | **Module E+** — Weekly Timetable + site filters + bulk attendance | `calendar/`, site filter (`084af1c`) |
+| 19 | Jul 17 | Programs delete w/ confirmation; Import full "Import as" options | `programs/`, `import-wizard` (`e865a23`) |
+| 20 | Jul 17 | **Module F** — Surveys: builder, public token form, results + xlsx export | `surveys/`, `0005_survey_public.sql` (`bd4d8e0`) |
+| 21 | Jul 17 | Survey form: memoize each question (cut re-render cost) | `surveys/` (`3a29d2f`) |
+| 22 | Jul 18 | **Phase 2** — chronic-absence + ratio flag engine (derived/live) | `lib/flags.ts` → dashboard rail + at-risk KPI + participant flags (`1597603`) |
+| 23 | Jul 18 | **Phase 2** — Recognition/rewards (derived badges, board, in-app + Adobe Express certificate) | `recognition/`, `lib/recognition.ts`, `print-button.tsx` |
 
 ---
 

@@ -46,6 +46,12 @@ export const NAV: NavItem[] = [
     blurb: "Build surveys, target audiences, and read per-question results with pre/post pairing.",
   },
   {
+    href: "/recognition",
+    label: "Recognition",
+    title: "Recognition & Rewards",
+    blurb: "Attendance milestones, streaks, and most-improved — earned automatically, printable as certificates.",
+  },
+  {
     href: "/analytics",
     label: "Analytics",
     title: "Analytics Explorer",

@@ -1,0 +1,180 @@
+/* Certificate — print-ready. Screen shows a toolbar; print shows only the cert. */
+.cert-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 8px 4px 40px;
+}
+.cert-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.cert-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cert-switch {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cert-switch-btn {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  text-decoration: none;
+}
+.cert-switch-btn.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+/* The certificate sheet */
+.cert {
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 20px 50px rgba(7, 42, 54, 0.16);
+  /* accent frame — recolored per badge kind below */
+  border: 2px solid #0d9488;
+}
+.cert-inner {
+  border: 1.5px solid #e4ddcf;
+  border-radius: 6px;
+  padding: 48px 56px 40px;
+  text-align: center;
+  background:
+    radial-gradient(120% 90% at 50% -20%, rgba(13, 148, 136, 0.06) 0%, transparent 60%),
+    #fffdf9;
+  color: #14201f;
+  aspect-ratio: 1.414 / 1; /* A4 landscape feel */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cert-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 600;
+  font-size: 17px;
+  color: #0b6e66;
+}
+.cert-eyebrow {
+  margin: 20px 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 12px;
+  font-weight: 700;
+  color: #b4802a;
+}
+.cert-emoji {
+  font-size: 58px;
+  line-height: 1;
+  margin: 14px 0 6px;
+}
+.cert-awarded {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #47595a;
+}
+.cert-name {
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 600;
+  font-size: 40px;
+  margin: 6px 0 4px;
+  color: #0b3a4a;
+  line-height: 1.1;
+}
+.cert-for {
+  margin: 8px 0 0;
+  font-size: 16px;
+  color: #14201f;
+}
+.cert-detail {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #657a78;
+}
+.cert-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+  margin-top: 40px;
+}
+.cert-sign,
+.cert-date {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.cert-sign-line {
+  width: 100%;
+  max-width: 200px;
+  height: 1.5px;
+  background: #b8c2c0;
+  margin-bottom: 2px;
+}
+.cert-date-val {
+  font-size: 15px;
+  font-weight: 600;
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid #b8c2c0;
+  min-width: 160px;
+}
+.cert-sign-lbl {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8a9a98;
+}
+
+/* frame color by badge kind */
+.cert.badge-milestone {
+  border-color: #d97706;
+}
+.cert.badge-improvement {
+  border-color: #0d9488;
+}
+.cert.badge-streak {
+  border-color: #dc2626;
+}
+.cert.badge-consistency {
+  border-color: #2563eb;
+}
+.cert.badge-engagement {
+  border-color: #7c3aed;
+}
+
+/* Print: strip the app chrome + toolbar, show only the certificate sheet. */
+@media print {
+  .app-sidebar,
+  .app-topbar,
+  .cert-toolbar {
+    display: none !important;
+  }
+  .app-content,
+  .cert-page {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  .cert {
+    box-shadow: none;
+    border-radius: 0;
+  }
+}

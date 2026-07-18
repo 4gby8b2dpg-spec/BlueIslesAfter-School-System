@@ -1,0 +1,56 @@
+/* Recognition board */
+.recog-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.recog-stat {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.recog-stat-val {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.recog-stat-lbl {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.recog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+.recog-person-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.recog-name {
+  font-weight: 650;
+  font-size: 16px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.recog-name:hover {
+  text-decoration: underline;
+}
+.recog-cert-link {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.recog-cert-link:hover {
+  text-decoration: underline;
+}
