@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
-import { updateSurvey, deleteQuestion, setSurveyStatus, addQuestion } from "../actions";
+import { updateSurvey, deleteQuestion, setSurveyStatus, addQuestion, setSurveyPair } from "../actions";
 import { AddQuestionForm } from "@/components/add-question-form";
 import { CopyLink } from "@/components/copy-link";
 import "../surveys.css";
@@ -26,13 +26,13 @@ export default async function SurveyBuilder({ params }: { params: Promise<{ id: 
 
   const { data: survey } = await supabase
     .from("surveys")
-    .select("id, title, description, audience, program_id, status, public_token")
+    .select("id, title, description, audience, program_id, status, public_token, paired_survey_id")
     .eq("org_id", ctx.orgId)
     .eq("id", id)
     .maybeSingle();
   if (!survey) notFound();
 
-  const [questionsRes, programsRes, responsesRes] = await Promise.all([
+  const [questionsRes, programsRes, responsesRes, otherSurveysRes] = await Promise.all([
     supabase
       .from("survey_questions")
       .select("id, position, prompt, qtype, options, required")
@@ -40,11 +40,21 @@ export default async function SurveyBuilder({ params }: { params: Promise<{ id: 
       .order("position"),
     supabase.from("programs").select("id, name").eq("org_id", ctx.orgId).order("name"),
     supabase.from("survey_responses").select("id", { count: "exact", head: true }).eq("survey_id", id),
+    supabase
+      .from("surveys")
+      .select("id, title")
+      .eq("org_id", ctx.orgId)
+      .neq("id", id)
+      .order("title"),
   ]);
 
   const questions = questionsRes.data ?? [];
   const programs = programsRes.data ?? [];
   const responseCount = responsesRes.count ?? 0;
+  const otherSurveys = otherSurveysRes.data ?? [];
+  const pairedTitle = survey.paired_survey_id
+    ? (otherSurveys.find((s) => s.id === survey.paired_survey_id)?.title ?? "another survey")
+    : null;
   const canEdit = ["admin", "director", "staff"].includes(ctx.role);
 
   return (
@@ -95,6 +105,61 @@ export default async function SurveyBuilder({ params }: { params: Promise<{ id: 
             <span className="card-sub">Anyone with this link can respond</span>
           </div>
           <CopyLink path={`/survey/${survey.public_token}`} />
+        </section>
+      )}
+
+      {(canEdit || survey.paired_survey_id) && (
+        <section className="card survey-pair">
+          <div className="card-head">
+            <h2>Pre / Post pairing</h2>
+            <span className="card-sub">Compare two surveys to see the shift</span>
+          </div>
+          {survey.paired_survey_id ? (
+            <div className="pair-active">
+              <p>
+                Paired with <strong>{pairedTitle}</strong>. The comparison shows the before → after
+                change for each matching question.
+              </p>
+              <div className="pair-actions">
+                <Link href={`/surveys/${id}/compare`} className="btn-primary">
+                  View comparison
+                </Link>
+                {canEdit && (
+                  <form action={setSurveyPair}>
+                    <input type="hidden" name="surveyId" value={id} />
+                    <input type="hidden" name="pairedSurveyId" value="" />
+                    <button className="btn-ghost" type="submit">
+                      Unpair
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          ) : canEdit ? (
+            otherSurveys.length === 0 ? (
+              <p className="empty">Create another survey to pair this one with.</p>
+            ) : (
+              <form action={setSurveyPair} className="pair-form">
+                <input type="hidden" name="surveyId" value={id} />
+                <label>
+                  <span>Pair with</span>
+                  <select name="pairedSurveyId" defaultValue="">
+                    <option value="" disabled>
+                      Choose a survey…
+                    </option>
+                    {otherSurveys.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button className="btn-primary" type="submit">
+                  Pair surveys
+                </button>
+              </form>
+            )
+          ) : null}
         </section>
       )}
 

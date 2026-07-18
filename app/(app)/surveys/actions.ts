@@ -126,3 +126,52 @@ export async function setSurveyStatus(formData: FormData) {
   revalidatePath(`/surveys/${id}`);
   revalidatePath("/surveys");
 }
+
+// Pre/post pairing (FR-F.4). Links two surveys both directions so their
+// results can be compared. Passing an empty partner unpairs.
+export async function setSurveyPair(formData: FormData) {
+  const ctx = await requireEditor();
+  if (!ctx) return;
+  const id = String(formData.get("surveyId"));
+  const pairedId = String(formData.get("pairedSurveyId") ?? "") || null;
+  if (!id || pairedId === id) return;
+
+  const supabase = await createClient();
+
+  async function clearPartnerOf(surveyId: string, keep: string | null) {
+    const { data } = await supabase
+      .from("surveys")
+      .select("paired_survey_id")
+      .eq("id", surveyId)
+      .eq("org_id", ctx!.orgId)
+      .maybeSingle();
+    const partner = data?.paired_survey_id as string | null | undefined;
+    if (partner && partner !== keep) {
+      await supabase
+        .from("surveys")
+        .update({ paired_survey_id: null })
+        .eq("id", partner)
+        .eq("org_id", ctx!.orgId);
+    }
+  }
+
+  // Detach whatever each side currently points at, then link (or leave cleared).
+  await clearPartnerOf(id, pairedId);
+  if (pairedId) await clearPartnerOf(pairedId, id);
+
+  await supabase
+    .from("surveys")
+    .update({ paired_survey_id: pairedId })
+    .eq("id", id)
+    .eq("org_id", ctx.orgId);
+  if (pairedId) {
+    await supabase
+      .from("surveys")
+      .update({ paired_survey_id: id })
+      .eq("id", pairedId)
+      .eq("org_id", ctx.orgId);
+    revalidatePath(`/surveys/${pairedId}`);
+  }
+
+  revalidatePath(`/surveys/${id}`);
+}
