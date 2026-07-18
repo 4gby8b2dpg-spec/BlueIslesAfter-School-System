@@ -28,8 +28,9 @@ export function NewScheduleForm({
 
   const shownPrograms = site ? programs.filter((p) => p.siteId === site) : programs;
 
-  const today = iso(new Date());
-  const inTenWeeks = iso(new Date(Date.now() + 70 * 86_400_000));
+  const now = new Date();
+  const today = iso(now);
+  const inTenWeeks = iso(new Date(now.getTime() + 70 * 86_400_000));
 
   if (!open) {
     return (
