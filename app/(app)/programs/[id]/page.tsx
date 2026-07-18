@@ -81,7 +81,7 @@ export default async function ProgramDetail({
   const pct = capacity > 0 ? Math.min(100, Math.round((roster.length / capacity) * 100)) : 0;
   const full = capacity > 0 && roster.length >= capacity;
 
-  const now = Date.now();
+  const now = new Date().getTime();
   const upcoming = sessions.filter((s) => new Date(s.starts_at).getTime() >= now);
   const past = sessions.filter((s) => new Date(s.starts_at).getTime() < now).reverse();
   const canEdit = ["admin", "director", "staff"].includes(ctx.role);

@@ -45,7 +45,7 @@ function normalizeDate(v: string): { ok: boolean; val: string | null } {
   // MM/DD/YYYY or M/D/YY
   const mdy = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
   if (mdy) {
-    let [, mm, dd, yy] = mdy;
+    const [, mm, dd, yy] = mdy;
     let year = Number(yy);
     if (year < 100) year += year > 30 ? 1900 : 2000;
     const d = new Date(year, Number(mm) - 1, Number(dd));
