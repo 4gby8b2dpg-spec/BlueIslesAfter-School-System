@@ -45,6 +45,41 @@ export async function createProgram(formData: FormData) {
   if (created?.id) redirect(`/programs/${created.id}`);
 }
 
+export async function deleteProgram(formData: FormData) {
+  const ctx = await requireAppContext();
+  if (!["admin", "director"].includes(ctx.role)) return;
+  const programId = String(formData.get("programId") ?? "");
+  if (!programId) return;
+
+  const supabase = await createClient();
+  const { data: before } = await supabase
+    .from("programs")
+    .select("name")
+    .eq("id", programId)
+    .eq("org_id", ctx.orgId)
+    .maybeSingle();
+
+  // Surveys reference programs without cascade — detach so the delete succeeds.
+  await supabase.from("surveys").update({ program_id: null }).eq("org_id", ctx.orgId).eq("program_id", programId);
+  // Delete cascades enrollments, sessions (→ attendance), activities, flags.
+  await supabase.from("programs").delete().eq("id", programId).eq("org_id", ctx.orgId);
+
+  await supabase.from("audit_log").insert({
+    org_id: ctx.orgId,
+    actor_id: ctx.userId,
+    action: "delete",
+    entity_table: "programs",
+    entity_id: programId,
+    before,
+    after: null,
+  });
+
+  revalidatePath("/programs");
+  revalidatePath("/dashboard");
+  revalidatePath("/analytics");
+  redirect("/programs");
+}
+
 export async function createSession(formData: FormData) {
   const ctx = await requireAppContext();
   if (!["admin", "director", "staff"].includes(ctx.role)) return;

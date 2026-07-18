@@ -293,10 +293,22 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
 
           <div className="wz-inline">
             Import as:
-            <select disabled value="participants">
+            <select defaultValue="participants" aria-label="What this file contains">
               <option value="participants">Participants</option>
+              <option value="attendance" disabled>
+                Attendance history — coming soon
+              </option>
+              <option value="enrollments" disabled>
+                Enrollments — coming soon
+              </option>
+              <option value="programs" disabled>
+                Programs — coming soon
+              </option>
+              <option value="survey_responses" disabled>
+                Survey responses — coming soon
+              </option>
             </select>
-            <span className="wz-hint">More targets (attendance, enrollments) coming next.</span>
+            <span className="wz-hint">Participants import is live; the others are on the way.</span>
           </div>
 
           <div className="wz-actions">

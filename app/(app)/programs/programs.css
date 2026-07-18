@@ -258,3 +258,56 @@
   color: var(--faint);
   font-size: 12.5px;
 }
+
+/* danger zone */
+.program-danger {
+  margin-top: 18px;
+  border-color: #f0d9d7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.program-danger h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--crit);
+}
+.program-danger p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+.delete-confirm {
+  background: var(--crit-bg);
+  border: 1px solid #f0d9d7;
+  border-radius: 10px;
+  padding: 14px 16px;
+  max-width: 460px;
+}
+.delete-confirm p {
+  font-size: 13.5px;
+  color: var(--ink);
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+.delete-actions {
+  display: flex;
+  gap: 10px;
+}
+.btn-danger {
+  font: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--crit);
+  color: #fff;
+  cursor: pointer;
+}
+.btn-danger:hover {
+  filter: brightness(0.93);
+}

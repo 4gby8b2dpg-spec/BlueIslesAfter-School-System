@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { NewSessionForm } from "@/components/new-session-form";
+import { DeleteProgramButton } from "@/components/delete-program-button";
 import "../programs.css";
 
 export const dynamic = "force-dynamic";
@@ -84,6 +85,7 @@ export default async function ProgramDetail({
   const upcoming = sessions.filter((s) => new Date(s.starts_at).getTime() >= now);
   const past = sessions.filter((s) => new Date(s.starts_at).getTime() < now).reverse();
   const canEdit = ["admin", "director", "staff"].includes(ctx.role);
+  const canDelete = ["admin", "director"].includes(ctx.role);
   const todayStr = new Date().toISOString().slice(0, 10);
 
   const fmt = (iso: string) =>
@@ -225,6 +227,21 @@ export default async function ProgramDetail({
           )}
         </section>
       </div>
+
+      {canDelete && (
+        <section className="card program-danger">
+          <div>
+            <h2>Delete program</h2>
+            <p>Removes this program and everything tied to it. There&rsquo;s no undo.</p>
+          </div>
+          <DeleteProgramButton
+            programId={program.id}
+            programName={program.name}
+            sessions={sessions.length}
+            enrolled={roster.length}
+          />
+        </section>
+      )}
     </main>
   );
 }
