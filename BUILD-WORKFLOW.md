@@ -102,7 +102,8 @@ Each row = one committed step. Times are build order on 2026-07-16.
 | 21 | Jul 17 | Survey form: memoize each question (cut re-render cost) | `surveys/` (`3a29d2f`) |
 | 22 | Jul 18 | **Phase 2** — chronic-absence + ratio flag engine (derived/live) | `lib/flags.ts` → dashboard rail + at-risk KPI + participant flags (`1597603`) |
 | 23 | Jul 18 | **Phase 2** — Recognition/rewards (derived badges, board, in-app + Adobe Express certificate) | `recognition/`, `lib/recognition.ts`, `print-button.tsx` |
-| 24 | Jul 18 | **Phase 2** — Per-org configurable flag thresholds (admin Settings card → engine) | `0006_org_settings.sql` (applied), `lib/flags.ts` (`getFlagThresholds`), `settings/` |
+| 24 | Jul 18 | **Phase 2** — Per-org configurable flag thresholds (admin Settings card → engine) | `0006_org_settings.sql` (applied to hosted DB), `lib/flags.ts` (`getFlagThresholds`), `settings/` (`3c8a7f1`) |
+| 25 | Jul 18 | **Phase 2** — Waitlists: auto-waitlist over capacity + promote | `participants/actions.ts`, `programs/` (`230df69`) |
 
 ---
 

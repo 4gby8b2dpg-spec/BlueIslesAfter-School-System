@@ -4,6 +4,7 @@ import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { NewSessionForm } from "@/components/new-session-form";
 import { DeleteProgramButton } from "@/components/delete-program-button";
+import { promoteFromWaitlist } from "../actions";
 import "../programs.css";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +32,7 @@ export default async function ProgramDetail({
   const [enrollRes, sessionsRes] = await Promise.all([
     supabase
       .from("enrollments")
-      .select("status, participants(id, first_name, last_name, grade)")
+      .select("id, status, waitlist_position, participants(id, first_name, last_name, grade)")
       .eq("org_id", ctx.orgId)
       .eq("program_id", id),
     supabase
@@ -43,7 +44,9 @@ export default async function ProgramDetail({
   ]);
 
   const enrollments = (enrollRes.data ?? []) as unknown as {
+    id: string;
     status: string;
+    waitlist_position: number | null;
     participants: { id: string; first_name: string; last_name: string; grade: string | null } | null;
   }[];
   const sessions = sessionsRes.data ?? [];
@@ -72,6 +75,9 @@ export default async function ProgramDetail({
     .filter((e) => e.status === "enrolled" && e.participants)
     .map((e) => e.participants!)
     .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`));
+  const waitlist = enrollments
+    .filter((e) => e.status === "waitlisted" && e.participants)
+    .sort((a, b) => (a.waitlist_position ?? 0) - (b.waitlist_position ?? 0));
   const everEnrolled = enrollments.length;
   const retained = enrollments.filter((e) => ["enrolled", "completed"].includes(e.status)).length;
 
@@ -226,6 +232,39 @@ export default async function ProgramDetail({
             </ul>
           )}
         </section>
+
+        {/* waitlist */}
+        {waitlist.length > 0 && (
+          <section className="card">
+            <div className="card-head">
+              <h2>Waitlist</h2>
+              <span className="card-sub">{waitlist.length} waiting</span>
+            </div>
+            <ol className="prog-waitlist">
+              {waitlist.map((e, i) => (
+                <li key={e.id} className="wl-row">
+                  <span className="wl-pos num">{i + 1}</span>
+                  <Link href={`/participants/${e.participants!.id}`} className="roster-name">
+                    {e.participants!.first_name} {e.participants!.last_name}
+                  </Link>
+                  <span className="pr-grade">Gr {e.participants!.grade ?? "—"}</span>
+                  {canEdit && (
+                    <form action={promoteFromWaitlist} className="wl-promote">
+                      <input type="hidden" name="enrollmentId" value={e.id} />
+                      <input type="hidden" name="programId" value={program.id} />
+                      <button className="mini-btn" type="submit" disabled={full}>
+                        Promote
+                      </button>
+                    </form>
+                  )}
+                </li>
+              ))}
+            </ol>
+            {full && (
+              <p className="empty">Program is at capacity — withdraw an enrolled participant to open a seat.</p>
+            )}
+          </section>
+        )}
       </div>
 
       {canDelete && (

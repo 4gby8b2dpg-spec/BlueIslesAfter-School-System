@@ -311,3 +311,59 @@
 .btn-danger:hover {
   filter: brightness(0.93);
 }
+
+/* waitlist */
+.prog-waitlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: none;
+}
+.wl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.wl-row:last-child {
+  border-bottom: 0;
+}
+.wl-pos {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: 12px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.wl-row .roster-name {
+  flex: 1;
+}
+.wl-promote {
+  flex: none;
+}
+.wl-promote button {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--accent);
+  cursor: pointer;
+}
+.wl-promote button:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.wl-promote button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

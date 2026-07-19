@@ -109,8 +109,11 @@ export default async function ParticipantProfile({
     .slice(0, 8);
 
   const activeEnrollments = enrollments.filter((e) => e.status === "enrolled");
-  const enrolledIds = new Set(activeEnrollments.map((e) => e.program_id));
-  const enrollable = programs.filter((pr) => !enrolledIds.has(pr.id));
+  // Exclude programs they already hold a seat OR a waitlist spot in.
+  const heldIds = new Set(
+    enrollments.filter((e) => ["enrolled", "waitlisted"].includes(e.status)).map((e) => e.program_id),
+  );
+  const enrollable = programs.filter((pr) => !heldIds.has(pr.id));
   const canEdit = ["admin", "director", "staff"].includes(ctx.role);
   const age = ageFrom(p.date_of_birth);
   const rateCls = rate == null ? "muted" : rate >= 90 ? "good" : rate >= 80 ? "ok" : "warn";

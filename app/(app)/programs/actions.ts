@@ -110,3 +110,29 @@ export async function createSession(formData: FormData) {
   revalidatePath("/attendance");
   revalidatePath("/dashboard");
 }
+
+// Promote a waitlisted participant into an open seat.
+export async function promoteFromWaitlist(formData: FormData) {
+  const ctx = await requireAppContext();
+  if (!["admin", "director", "staff"].includes(ctx.role)) return;
+  const enrollmentId = String(formData.get("enrollmentId"));
+  const programId = String(formData.get("programId"));
+  if (!enrollmentId) return;
+
+  const supabase = await createClient();
+  await supabase
+    .from("enrollments")
+    .update({
+      status: "enrolled",
+      enrolled_on: new Date().toISOString().slice(0, 10),
+      waitlist_position: null,
+      source: "waitlist_promo",
+    })
+    .eq("id", enrollmentId)
+    .eq("org_id", ctx.orgId)
+    .eq("status", "waitlisted");
+
+  revalidatePath(`/programs/${programId}`);
+  revalidatePath("/participants");
+  revalidatePath("/dashboard");
+}
