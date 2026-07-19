@@ -1,43 +1,9 @@
 import Link from "next/link";
 import { requireAppContext } from "@/lib/auth-context";
 import { getDashboardData } from "@/lib/dashboard";
+import { Sparkline } from "@/components/sparkline";
 
 export const dynamic = "force-dynamic";
-
-function Sparkline({ points }: { points: (number | null)[] }) {
-  const vals = points.map((p) => p ?? 0);
-  const max = 100;
-  const min = Math.min(60, ...vals.filter((_, i) => points[i] != null));
-  const w = 260,
-    h = 60;
-  const step = w / (points.length - 1);
-  const y = (v: number) => h - ((v - min) / (max - min)) * h;
-  const coords = points
-    .map((p, i) => (p == null ? null : `${i * step},${y(p).toFixed(1)}`))
-    .filter(Boolean) as string[];
-  const last = points.map((p, i) => ({ p, i })).filter((x) => x.p != null).pop();
-  return (
-    <svg
-      className="spark"
-      viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="none"
-      role="img"
-      aria-label="Weekly attendance rate, last 8 weeks"
-    >
-      <polyline
-        points={coords.join(" ")}
-        fill="none"
-        stroke="#0D9488"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {last && last.p != null && (
-        <circle cx={last.i * step} cy={y(last.p)} r="3.6" fill="#D97706" />
-      )}
-    </svg>
-  );
-}
 
 export default async function DashboardPage() {
   const ctx = await requireAppContext();
@@ -86,7 +52,7 @@ export default async function DashboardPage() {
               <h2>Attendance trend</h2>
               <span className="card-sub">Last 8 weeks</span>
             </div>
-            <Sparkline points={d.trend} />
+            <Sparkline points={d.trend} label="Weekly attendance rate, last 8 weeks" />
           </section>
 
           <section className="card">
