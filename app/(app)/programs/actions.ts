@@ -136,3 +136,24 @@ export async function promoteFromWaitlist(formData: FormData) {
   revalidatePath("/participants");
   revalidatePath("/dashboard");
 }
+
+// Set/change a program's capacity (empty or 0 clears it). Admin/director.
+export async function updateProgramCapacity(formData: FormData) {
+  const ctx = await requireAppContext();
+  if (!["admin", "director"].includes(ctx.role)) return;
+  const programId = String(formData.get("programId"));
+  if (!programId) return;
+  const raw = String(formData.get("capacity") ?? "").trim();
+  const n = raw ? Math.round(Number(raw)) : 0;
+  const capacity = Number.isFinite(n) && n > 0 ? n : null;
+
+  const supabase = await createClient();
+  await supabase
+    .from("programs")
+    .update({ capacity })
+    .eq("id", programId)
+    .eq("org_id", ctx.orgId);
+
+  revalidatePath(`/programs/${programId}`);
+  revalidatePath("/dashboard");
+}
