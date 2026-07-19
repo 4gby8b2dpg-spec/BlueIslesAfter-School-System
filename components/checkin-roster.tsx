@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { saveAttendance, type AttendanceMark } from "@/app/(app)/attendance/actions";
+import { saveAttendance } from "@/app/(app)/attendance/actions";
+import type { AttendanceMark } from "@/lib/attendance";
 
 type Status = "present" | "absent" | "excused" | "late";
 const STATUSES: { key: Status; label: string; short: string }[] = [

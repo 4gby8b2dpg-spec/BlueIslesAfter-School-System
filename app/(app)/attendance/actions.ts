@@ -5,8 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { persistAttendance, type AttendanceMark } from "@/lib/attendance";
 import { revalidatePath } from "next/cache";
 
-export type { AttendanceMark };
-
 export async function saveAttendance(input: {
   sessionId: string;
   records: AttendanceMark[];
