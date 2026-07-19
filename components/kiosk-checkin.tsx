@@ -6,6 +6,20 @@ import type { Status } from "@/lib/attendance";
 
 type Roster = { id: string; name: string; grade: string }[];
 
+// Ask the browser to fire a "kiosk-sync" event when connectivity returns, even
+// if the tab is backgrounded (Chromium only; a no-op elsewhere).
+async function scheduleBackgroundSync() {
+  try {
+    if (!("serviceWorker" in navigator)) return;
+    const reg = (await navigator.serviceWorker.ready) as ServiceWorkerRegistration & {
+      sync?: { register: (tag: string) => Promise<void> };
+    };
+    if (reg.sync) await reg.sync.register("kiosk-sync");
+  } catch {
+    // Background Sync unsupported — the in-page online/interval retry covers it.
+  }
+}
+
 const ALT: Status[] = ["absent", "late", "excused"]; // cycled by the status pill
 const SHORT: Record<Status, string> = { present: "P", absent: "A", late: "L", excused: "E" };
 const LABEL: Record<Status, string> = {
@@ -90,6 +104,7 @@ export function KioskCheckin({
       }
     } catch {
       setOnline(false); // network unreachable — keep the queue for later
+      void scheduleBackgroundSync(); // Chromium: retry when connectivity returns
     } finally {
       setSyncing(false);
     }
@@ -135,6 +150,16 @@ export function KioskCheckin({
       window.removeEventListener("offline", goOffline);
       clearInterval(iv);
     };
+  }, [flush]);
+
+  // Background Sync wakes this tab via a service-worker message — flush on cue.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMsg = (e: MessageEvent) => {
+      if (e.data?.type === "kiosk-flush") void flush();
+    };
+    navigator.serviceWorker.addEventListener("message", onMsg);
+    return () => navigator.serviceWorker.removeEventListener("message", onMsg);
   }, [flush]);
 
   function apply(next: Record<string, Status>, touched: string[]) {

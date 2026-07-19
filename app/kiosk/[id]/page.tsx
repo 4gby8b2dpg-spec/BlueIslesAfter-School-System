@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { KioskCheckin } from "@/components/kiosk-checkin";
+import { SwRegister } from "@/components/sw-register";
 import type { Status } from "@/lib/attendance";
 import "../../(app)/app.css";
 import "../kiosk.css";
@@ -84,12 +85,15 @@ export default async function KioskPage({ params }: { params: Promise<{ id: stri
   }
 
   return (
-    <KioskCheckin
-      sessionId={id}
-      title={prog?.name ?? "Session"}
-      subtitle={subtitle}
-      roster={roster}
-      initial={initial}
-    />
+    <>
+      <SwRegister />
+      <KioskCheckin
+        sessionId={id}
+        title={prog?.name ?? "Session"}
+        subtitle={subtitle}
+        roster={roster}
+        initial={initial}
+      />
+    </>
   );
 }
