@@ -158,3 +158,42 @@ export async function deleteTerm(formData: FormData) {
   await logAudit(supabase, ctx.orgId, ctx.userId, "delete", "terms", termId, before, null);
   revalidatePath("/settings");
 }
+
+// Configurable flag thresholds (0006). Read by lib/flags.ts; falls back to
+// code defaults when unset. Admin-only, audited.
+function clampInt(v: FormDataEntryValue | null, lo: number, hi: number, fallback: number): number {
+  const n = Math.round(Number(String(v ?? "").trim()));
+  if (Number.isNaN(n)) return fallback;
+  return Math.min(hi, Math.max(lo, n));
+}
+
+export async function updateThresholds(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+
+  const warning = clampInt(formData.get("chronicWarningPct"), 1, 100, 10);
+  const critical = Math.max(warning, clampInt(formData.get("chronicCriticalPct"), 1, 100, 20));
+  const minSessions = clampInt(formData.get("chronicMinSessions"), 1, 60, 5);
+  const ratioRaw = String(formData.get("ratioDefaultTarget") ?? "").trim();
+  const ratioDefault = ratioRaw ? clampInt(ratioRaw, 1, 100, 10) : null;
+
+  const supabase = await createClient();
+  const { data: before } = await supabase
+    .from("org_settings")
+    .select("chronic_warning_pct, chronic_critical_pct, chronic_min_sessions, ratio_default_target")
+    .eq("org_id", ctx.orgId)
+    .maybeSingle();
+
+  const after = {
+    org_id: ctx.orgId,
+    chronic_warning_pct: warning,
+    chronic_critical_pct: critical,
+    chronic_min_sessions: minSessions,
+    ratio_default_target: ratioDefault,
+  };
+  await supabase.from("org_settings").upsert(after, { onConflict: "org_id" });
+  await logAudit(supabase, ctx.orgId, ctx.userId, "update", "org_settings", ctx.orgId, before, after);
+
+  revalidatePath("/settings");
+  revalidatePath("/dashboard");
+}

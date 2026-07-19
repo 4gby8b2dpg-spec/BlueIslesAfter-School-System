@@ -8,7 +8,9 @@ import {
   toggleSiteActive,
   deleteSite,
   deleteTerm,
+  updateThresholds,
 } from "./actions";
+import { getFlagThresholds } from "@/lib/flags";
 import "./settings.css";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +38,7 @@ export default async function SettingsPage() {
   }
 
   const supabase = await createClient();
-  const [membersRes, sitesRes, termsRes, programsRes, auditRes] = await Promise.all([
+  const [membersRes, sitesRes, termsRes, programsRes, auditRes, thresholds] = await Promise.all([
     supabase
       .from("memberships")
       .select("id, role, status, user_id, profiles(email, full_name)")
@@ -50,6 +52,7 @@ export default async function SettingsPage() {
       .eq("org_id", ctx.orgId)
       .order("at", { ascending: false })
       .limit(30),
+    getFlagThresholds(ctx.orgId),
   ]);
 
   const members = (membersRes.data ?? []) as unknown as {
@@ -153,6 +156,77 @@ export default async function SettingsPage() {
           New members sign in with a Supabase account, then appear here to be assigned a
           role. Email invitations are a follow-up (they need the server service-role key).
         </p>
+      </section>
+
+      {/* ALERT THRESHOLDS */}
+      <section className="card">
+        <div className="card-head">
+          <h2>Alert thresholds</h2>
+          <span className="card-sub">Drives the dashboard flags</span>
+        </div>
+        <form action={updateThresholds} className="threshold-form">
+          <label>
+            <span>Chronic absence — warning</span>
+            <div className="threshold-input">
+              <input
+                type="number"
+                name="chronicWarningPct"
+                min={1}
+                max={100}
+                defaultValue={thresholds.warningPct}
+              />
+              <em>% absent</em>
+            </div>
+          </label>
+          <label>
+            <span>Chronic absence — critical</span>
+            <div className="threshold-input">
+              <input
+                type="number"
+                name="chronicCriticalPct"
+                min={1}
+                max={100}
+                defaultValue={thresholds.criticalPct}
+              />
+              <em>% absent</em>
+            </div>
+          </label>
+          <label>
+            <span>Minimum sessions before flagging</span>
+            <div className="threshold-input">
+              <input
+                type="number"
+                name="chronicMinSessions"
+                min={1}
+                max={60}
+                defaultValue={thresholds.minSessions}
+              />
+              <em>sessions</em>
+            </div>
+          </label>
+          <label>
+            <span>Default staff ratio (fallback)</span>
+            <div className="threshold-input">
+              <em>1 :</em>
+              <input
+                type="number"
+                name="ratioDefaultTarget"
+                min={1}
+                max={100}
+                placeholder="—"
+                defaultValue={thresholds.ratioDefaultTarget ?? ""}
+              />
+              <em>participants</em>
+            </div>
+          </label>
+          <p className="threshold-note">
+            Used when a program has no ratio of its own. Leave blank to skip ratio checks for those
+            programs. Critical is raised to the warning value if set lower.
+          </p>
+          <button className="btn-primary" type="submit">
+            Save thresholds
+          </button>
+        </form>
       </section>
 
       {/* SITES + TERMS */}

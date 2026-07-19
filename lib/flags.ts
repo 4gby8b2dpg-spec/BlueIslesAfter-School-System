@@ -33,8 +33,39 @@ export type ComputedFlag = {
   value: number; // the driving metric, for sorting within a severity
 };
 
+// Code defaults — used when an org hasn't customized its thresholds (0006).
 export const CHRONIC = { tier2Pct: 10, tier3Pct: 20, minSessions: 5 } as const;
 export const RATIO = { criticalMultiplier: 1.5 } as const;
+
+export type FlagThresholds = {
+  warningPct: number;
+  criticalPct: number;
+  minSessions: number;
+  ratioDefaultTarget: number | null;
+};
+
+async function fetchThresholds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orgId: string,
+): Promise<FlagThresholds> {
+  const { data } = await supabase
+    .from("org_settings")
+    .select("chronic_warning_pct, chronic_critical_pct, chronic_min_sessions, ratio_default_target")
+    .eq("org_id", orgId)
+    .maybeSingle();
+  return {
+    warningPct: data?.chronic_warning_pct ?? CHRONIC.tier2Pct,
+    criticalPct: data?.chronic_critical_pct ?? CHRONIC.tier3Pct,
+    minSessions: data?.chronic_min_sessions ?? CHRONIC.minSessions,
+    ratioDefaultTarget: data?.ratio_default_target ?? null,
+  };
+}
+
+/** Public: an org's flag thresholds (or code defaults). For the Settings screen. */
+export async function getFlagThresholds(orgId: string): Promise<FlagThresholds> {
+  const supabase = await createClient();
+  return fetchThresholds(supabase, orgId);
+}
 
 const DAY = 86_400_000;
 const SEVERITY_RANK: Record<FlagSeverity, number> = { critical: 0, warning: 1, info: 2 };
@@ -66,9 +97,9 @@ export async function getTermWindow(orgId: string): Promise<{ start: Date; end: 
   return termWindow(supabase, orgId);
 }
 
-function chronicSeverity(pct: number): FlagSeverity | null {
-  if (pct >= CHRONIC.tier3Pct) return "critical";
-  if (pct >= CHRONIC.tier2Pct) return "warning";
+function chronicSeverity(pct: number, t: FlagThresholds): FlagSeverity | null {
+  if (pct >= t.criticalPct) return "critical";
+  if (pct >= t.warningPct) return "warning";
   return null;
 }
 
@@ -81,7 +112,10 @@ export async function computeChronicAbsence(
   participantId?: string,
 ): Promise<ComputedFlag[]> {
   const supabase = await createClient();
-  const { start, end } = await termWindow(supabase, orgId);
+  const [{ start, end }, thresholds] = await Promise.all([
+    termWindow(supabase, orgId),
+    fetchThresholds(supabase, orgId),
+  ]);
 
   let q = supabase
     .from("attendance_records")
@@ -117,9 +151,9 @@ export async function computeChronicAbsence(
   const flags: ComputedFlag[] = [];
   for (const [pid, a] of byP) {
     const denom = a.present + a.absent;
-    if (denom < CHRONIC.minSessions) continue;
+    if (denom < thresholds.minSessions) continue;
     const pct = (a.absent / denom) * 100;
-    const severity = chronicSeverity(pct);
+    const severity = chronicSeverity(pct, thresholds);
     if (!severity) continue;
     flags.push({
       type: "chronic_absence",
@@ -139,7 +173,10 @@ export async function computeChronicAbsence(
  */
 export async function computeRatioBreaches(orgId: string): Promise<ComputedFlag[]> {
   const supabase = await createClient();
-  const { start, end } = await termWindow(supabase, orgId);
+  const [{ start, end }, thresholds] = await Promise.all([
+    termWindow(supabase, orgId),
+    fetchThresholds(supabase, orgId),
+  ]);
 
   const [sessionsRes, attRes, staffRes, programsRes] = await Promise.all([
     supabase
@@ -176,8 +213,9 @@ export async function computeRatioBreaches(orgId: string): Promise<ComputedFlag[
   const flags: ComputedFlag[] = [];
   for (const s of sessions) {
     const prog = program.get(s.program_id);
-    const target = prog?.target;
-    if (!target || target <= 0) continue; // no target configured → nothing to breach
+    // Use the program's own target, or the org-wide default when it has none.
+    const target = prog?.target ?? thresholds.ratioDefaultTarget;
+    if (!target || target <= 0) continue; // no target anywhere → nothing to breach
     const present = presentBySession.get(s.id) ?? 0;
     const staff = staffBySession.get(s.id) ?? 0;
     if (present === 0) continue;
