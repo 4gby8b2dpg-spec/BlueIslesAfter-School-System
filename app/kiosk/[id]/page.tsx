@@ -1,24 +1,21 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
-import { CheckInRoster } from "@/components/checkin-roster";
-import "../attendance.css";
+import { KioskCheckin } from "@/components/kiosk-checkin";
+import type { Status } from "@/lib/attendance";
+import "../../(app)/app.css";
+import "../kiosk.css";
 
 export const dynamic = "force-dynamic";
 
-export default async function CheckInPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function KioskPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const ctx = await requireAppContext();
   const supabase = await createClient();
 
   const { data: session } = await supabase
     .from("sessions")
-    .select("id, starts_at, ends_at, room, program_id, status, programs(name)")
+    .select("id, starts_at, room, program_id, programs(name)")
     .eq("org_id", ctx.orgId)
     .eq("id", id)
     .maybeSingle();
@@ -55,8 +52,8 @@ export default async function CheckInPage({
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const initial: Record<string, string> = {};
-  for (const a of attRes.data ?? []) initial[a.participant_id] = a.status;
+  const initial: Record<string, Status> = {};
+  for (const a of attRes.data ?? []) initial[a.participant_id] = a.status as Status;
 
   const when = new Date(session.starts_at).toLocaleString("en-US", {
     weekday: "short",
@@ -65,37 +62,34 @@ export default async function CheckInPage({
     hour: "numeric",
     minute: "2-digit",
   });
+  const subtitle = `${when} · ${session.room ?? "—"}`;
+
+  if (roster.length === 0) {
+    return (
+      <div className="kiosk">
+        <header className="kiosk-head">
+          <div className="kiosk-title">
+            <h1>{prog?.name ?? "Session"}</h1>
+            <p>{subtitle}</p>
+          </div>
+          <div className="kiosk-status">
+            <a href={`/attendance/${id}`} className="kiosk-exit">
+              Exit
+            </a>
+          </div>
+        </header>
+        <p className="kiosk-empty">No participants are enrolled in this program yet.</p>
+      </div>
+    );
+  }
 
   return (
-    <main className="dash checkin-page">
-      <div className="profile-back">
-        <Link href="/attendance">← Back to attendance</Link>
-      </div>
-
-      <div className="checkin-head">
-        <div>
-          <h1>{prog?.name ?? "Session"}</h1>
-          <p>
-            {when} · {session.room ?? "—"}
-          </p>
-        </div>
-        {roster.length > 0 && (
-          <Link href={`/kiosk/${session.id}`} className="kiosk-launch">
-            Open kiosk ↗
-          </Link>
-        )}
-      </div>
-
-      {roster.length === 0 ? (
-        <section className="card">
-          <p className="empty">
-            No participants are enrolled in this program yet. Enroll participants
-            first, then take attendance.
-          </p>
-        </section>
-      ) : (
-        <CheckInRoster sessionId={session.id} roster={roster} initial={initial} />
-      )}
-    </main>
+    <KioskCheckin
+      sessionId={id}
+      title={prog?.name ?? "Session"}
+      subtitle={subtitle}
+      roster={roster}
+      initial={initial}
+    />
   );
 }

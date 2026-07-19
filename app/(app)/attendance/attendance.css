@@ -66,11 +66,32 @@
 .checkin-page {
   padding-bottom: 96px; /* room for sticky footer */
 }
+.checkin-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
 .checkin-head h1 {
   font-family: Fraunces, Georgia, serif;
   font-size: 26px;
   font-weight: 560;
   margin: 0;
+}
+.kiosk-launch {
+  flex: none;
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-ink);
+  text-decoration: none;
+  padding: 9px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+}
+.kiosk-launch:hover {
+  border-color: var(--accent);
 }
 .checkin-head p {
   color: var(--muted);
