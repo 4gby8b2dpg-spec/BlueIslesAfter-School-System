@@ -64,7 +64,7 @@ Supabase dashboard → Project Settings → API. Production values go in the
 | `app/login/`, `app/no-org/` | Auth + onboarding edges |
 | `components/` | Shared UI (`app-nav`, `import-wizard`, `checkin-roster`, forms, `charts/`, `ui/`) |
 | `lib/` | `supabase/` (client/server/middleware), `nav`, `auth-context`, `dashboard`, `metrics`, `providers` |
-| `supabase/migrations/` | Versioned SQL schema (`0001_init`, `0002_profile_on_signup`, `0003_ai_analytics`, `0004_profile_org_read`, `0005_survey_public`) |
+| `supabase/migrations/` | Versioned SQL schema (`0001_init`, `0002_profile_on_signup`, `0003_ai_analytics`, `0004_profile_org_read`, `0005_survey_public`, `0006_org_settings`) |
 | `supabase/seed.sql` | Demo data |
 | `sample-data/` | `participants-sample.csv` for import testing |
 | `blueprint.md` | Original product/feature blueprint |
@@ -102,6 +102,7 @@ Each row = one committed step. Times are build order on 2026-07-16.
 | 21 | Jul 17 | Survey form: memoize each question (cut re-render cost) | `surveys/` (`3a29d2f`) |
 | 22 | Jul 18 | **Phase 2** — chronic-absence + ratio flag engine (derived/live) | `lib/flags.ts` → dashboard rail + at-risk KPI + participant flags (`1597603`) |
 | 23 | Jul 18 | **Phase 2** — Recognition/rewards (derived badges, board, in-app + Adobe Express certificate) | `recognition/`, `lib/recognition.ts`, `print-button.tsx` |
+| 24 | Jul 18 | **Phase 2** — Per-org configurable flag thresholds (admin Settings card → engine) | `0006_org_settings.sql` (applied), `lib/flags.ts` (`getFlagThresholds`), `settings/` |
 
 ---
 
