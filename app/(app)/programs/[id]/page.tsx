@@ -4,7 +4,10 @@ import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { NewSessionForm } from "@/components/new-session-form";
 import { DeleteProgramButton } from "@/components/delete-program-button";
-import { promoteFromWaitlist } from "../actions";
+import { enrollParticipant } from "../../participants/actions";
+import { AddParticipantForm } from "@/components/add-participant-form";
+import { EditCapacityForm } from "@/components/edit-capacity-form";
+import { promoteFromWaitlist, updateProgramCapacity } from "../actions";
 import "../programs.css";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +32,7 @@ export default async function ProgramDetail({
   const site = program.sites as unknown as { name: string } | null;
   const term = program.terms as unknown as { name: string } | null;
 
-  const [enrollRes, sessionsRes] = await Promise.all([
+  const [enrollRes, sessionsRes, participantsRes] = await Promise.all([
     supabase
       .from("enrollments")
       .select("id, status, waitlist_position, participants(id, first_name, last_name, grade)")
@@ -41,6 +44,12 @@ export default async function ProgramDetail({
       .eq("org_id", ctx.orgId)
       .eq("program_id", id)
       .order("starts_at", { ascending: true }),
+    supabase
+      .from("participants")
+      .select("id, first_name, last_name")
+      .eq("org_id", ctx.orgId)
+      .is("deleted_at", null)
+      .order("last_name"),
   ]);
 
   const enrollments = (enrollRes.data ?? []) as unknown as {
@@ -79,6 +88,14 @@ export default async function ProgramDetail({
     .filter((e) => e.status === "waitlisted" && e.participants)
     .sort((a, b) => (a.waitlist_position ?? 0) - (b.waitlist_position ?? 0));
   const everEnrolled = enrollments.length;
+
+  // Participants not already holding an enrolled/waitlisted spot in this program.
+  const heldIds = new Set(
+    enrollments
+      .filter((e) => ["enrolled", "waitlisted"].includes(e.status) && e.participants)
+      .map((e) => e.participants!.id),
+  );
+  const addable = (participantsRes.data ?? []).filter((p) => !heldIds.has(p.id));
   const retained = enrollments.filter((e) => ["enrolled", "completed"].includes(e.status)).length;
 
   const rate = tot > 0 ? Math.round((pres / tot) * 100) : null;
@@ -136,6 +153,13 @@ export default async function ProgramDetail({
             <div className="prog-gauge-track slim">
               <div className={full ? "prog-gauge-fill full" : "prog-gauge-fill"} style={{ width: `${pct}%` }} />
             </div>
+          )}
+          {canDelete && (
+            <EditCapacityForm
+              action={updateProgramCapacity}
+              programId={program.id}
+              capacity={capacity}
+            />
           )}
         </div>
         <div className="ps-tile">
@@ -230,6 +254,20 @@ export default async function ProgramDetail({
                 </li>
               ))}
             </ul>
+          )}
+
+          {canEdit && addable.length > 0 && (
+            <div className="roster-add">
+              <AddParticipantForm
+                action={enrollParticipant}
+                programId={program.id}
+                participants={addable.map((p) => ({
+                  id: p.id,
+                  name: `${p.first_name} ${p.last_name}`,
+                }))}
+                full={full}
+              />
+            </div>
           )}
         </section>
 
