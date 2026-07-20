@@ -62,7 +62,7 @@ export default async function SettingsPage() {
 
   const { data: feedRows } = await supabase
     .from("calendar_feeds")
-    .select("id, label, site_id, token")
+    .select("id, label, site_id, user_id, token")
     .eq("org_id", ctx.orgId)
     .is("revoked_at", null)
     .order("created_at", { ascending: true });
@@ -83,6 +83,9 @@ export default async function SettingsPage() {
   }[];
   const sites = sitesRes.data ?? [];
   const siteName = new Map(sites.map((s) => [s.id, s.name]));
+  const memberName = new Map(
+    members.map((m) => [m.user_id, m.profiles?.full_name ?? m.profiles?.email ?? "Member"]),
+  );
   const terms = termsRes.data ?? [];
   const programs = programsRes.data ?? [];
   const siteUse = new Map<string, number>();
@@ -369,7 +372,11 @@ export default async function SettingsPage() {
               <span className="feed-meta">
                 <span className="feed-label">{f.label}</span>
                 <span className="feed-scope">
-                  {f.site_id ? (siteName.get(f.site_id) ?? "Site") : "All sites"}
+                  {f.user_id
+                    ? `${memberName.get(f.user_id) ?? "Staff member"}'s sessions`
+                    : f.site_id
+                      ? (siteName.get(f.site_id) ?? "Site")
+                      : "All sites"}
                 </span>
               </span>
               <CopyField value={`${baseUrl}/api/calendar/${f.token}`} label={`${f.label} feed URL`} />
@@ -389,13 +396,26 @@ export default async function SettingsPage() {
         </ul>
         <form action={createCalendarFeed} className="inline-add">
           <input name="label" placeholder="e.g. Staff schedule" required />
-          <select name="siteId" defaultValue="all" aria-label="Site for this feed">
+          <select name="scope" defaultValue="all" aria-label="What this feed covers">
             <option value="all">All sites</option>
-            {sites.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
+            {sites.length > 0 && (
+              <optgroup label="By site">
+                {sites.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            <optgroup label="By staff member">
+              {members
+                .filter((m) => m.status === "active")
+                .map((m) => (
+                  <option key={m.user_id} value={`staff:${m.user_id}`}>
+                    {m.profiles?.full_name ?? m.profiles?.email ?? "Member"}
+                  </option>
+                ))}
+            </optgroup>
           </select>
           <button className="btn-primary" type="submit">
             Create feed
