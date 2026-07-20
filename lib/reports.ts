@@ -1,11 +1,12 @@
-import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Report builders, shared by the Reports screen and (later) the scheduled
 // mailer, so a report emailed on a cron is byte-for-byte what the screen shows.
 // Takes a client rather than making one, so the caller decides whether it runs
 // under RLS (a signed-in user) or the service role (an unattended cron job).
 
-type DB = Awaited<ReturnType<typeof createClient>>;
+// Accepts either the cookie-bound RLS client or the service-role admin client.
+type DB = SupabaseClient;
 
 export const REPORT_TEMPLATES = [
   {

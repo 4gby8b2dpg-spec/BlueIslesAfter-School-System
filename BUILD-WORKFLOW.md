@@ -104,6 +104,16 @@ Each row = one committed step. Times are build order on 2026-07-16.
 | 23 | Jul 18 | **Phase 2** — Recognition/rewards (derived badges, board, in-app + Adobe Express certificate) | `recognition/`, `lib/recognition.ts`, `print-button.tsx` |
 | 24 | Jul 18 | **Phase 2** — Per-org configurable flag thresholds (admin Settings card → engine) | `0006_org_settings.sql` (applied to hosted DB), `lib/flags.ts` (`getFlagThresholds`), `settings/` (`3c8a7f1`) |
 | 25 | Jul 18 | **Phase 2** — Waitlists: auto-waitlist over capacity + promote | `participants/actions.ts`, `programs/` (`230df69`) |
+| 26 | Jul 19 | Program-page controls — "+ Add participant" searchable picker + inline capacity edit | `add-participant-form.tsx`, `edit-capacity-form.tsx` (`6b7ef32`) |
+| 27 | Jul 19 | **FR-G.2** — Program-detail analytics: attendance trend + avg survey rating; extracted shared `Sparkline` | `components/sparkline.tsx`, `programs/[id]/` (`bb10a7e`) |
+| 28 | Jul 19 | **FR-G.3** — Analytics Explorer v2: date range, funder metrics (unduplicated, avg daily), Excel export, canonical definitions | `analytics/`, `explorer-export.tsx` (`b7a11f0`) |
+| 29 | Jul 19 | **FR-G.3** — Explorer over-time weekly trend view; `Sparkline` gains `yMin/yMax` + grid/axis | `analytics/`, `sparkline.tsx` (`7166804`) |
+| 30 | Jul 19 | **Kiosk mode pt.1** — full-screen tap-to-present check-in, localStorage offline queue, idempotent sync API | `app/kiosk/`, `kiosk-checkin.tsx`, `api/attendance/sync/`, `lib/attendance.ts` (`541ed60`) |
+| 31 | Jul 19 | **Kiosk mode pt.2** — hand-rolled service worker (network-first + cache fallback) for cold-start offline; Background Sync | `public/sw.js`, `sw-register.tsx` (`e78df6f`) |
+| 32 | Jul 20 | **Visual refresh** — gradient design system: teal sidebar, welcome banner, KPI icon chips, spot icons on every page/card, gradient badges | `app.css` tokens, `page-head.tsx`, `nav-icons.tsx`, `card-icon.tsx` (`7472aad`) |
+| 33 | Jul 20 | **FR-E.5** — ICS calendar feeds per site; token-authorised anon RPC, hand-rolled RFC 5545 writer | `0007_calendar_feeds.sql` (applied), `lib/ics.ts`, `api/calendar/[token]/` (`d9b104e`) |
+| 34 | Jul 20 | **FR-E.5 complete** — staff-scoped feeds (own assigned sessions); extracted `buildReport` so cron + screen share one implementation | `0008_staff_calendar_feeds.sql` (applied), `lib/reports.ts` (`ea2fdfe`) |
+| 35 | Jul 20 | **In progress** — scheduled report delivery: schedules + delivery log, Netlify cron, Resend mailer | `0009_report_schedules.sql`, `netlify/functions/` (pending `RESEND_API_KEY`) |
 
 ---
 
@@ -138,12 +148,26 @@ Follow this order for the next SaaS / website build:
 | Task | Command |
 |---|---|
 | Install deps | `npm install` |
-| Dev server | `npm run dev` → http://localhost:3000 |
+| Dev server | `npm run dev -- -p 3210` → http://localhost:3210 |
 | Production build | `npm run build` |
 | Start built app | `npm run start` |
 | Lint | `npm run lint` |
-| Apply DB migrations | `supabase db push` (via Supabase CLI) |
+| Apply DB migrations | Paste the migration file into the **Supabase SQL editor** and run it. (No Supabase CLI / DB password on this machine, so `supabase db push` isn't available — migrations are applied by hand, then verified over the REST API.) |
 | Seed demo data | run `supabase/seed.sql` |
+
+### Environment variables
+
+| Variable | Where | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | `.env.local` + Netlify | Public. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `.env.local` + Netlify | Publishable (`sb_publishable_…`). Browser-safe, **respects RLS**. |
+| `SUPABASE_SERVICE_ROLE_KEY` | `.env.local` + Netlify | Secret (`sb_secret_…`). **Bypasses all RLS** — server-only, never in a `NEXT_PUBLIC_*` var or a client component. Needed by the report cron, which has no user session. |
+| `RESEND_API_KEY` | `.env.local` + Netlify | Secret (`re_…`), "Sending access" scope. For scheduled report email. |
+
+> Legacy Supabase JWT keys (`eyJ…`) can no longer be rotated — the project has
+> migrated to publishable/secret keys and legacy keys are disabled. If a secret
+> ever leaks, create a new secret key and revoke the old one; rotating new-style
+> keys does **not** invalidate user sessions.
 
 ---
 
