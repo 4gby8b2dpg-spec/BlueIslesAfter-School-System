@@ -3,6 +3,7 @@ import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { NewScheduleForm } from "@/components/new-schedule-form";
 import "./timetable.css";
+import { PageHead } from "@/components/page-head";
 
 export const dynamic = "force-dynamic";
 
@@ -88,10 +89,9 @@ export default async function TimetablePage() {
 
   return (
     <main className="dash">
-      <div className="dash-head">
-        <h1>Weekly Timetable</h1>
-        <p>Recurring program schedule, Monday to Friday, by site.</p>
-      </div>
+      <PageHead href="/timetable" title="Weekly Timetable" tone="violet">
+        Recurring program schedule, Monday to Friday, by site.
+      </PageHead>
 
       {canEdit && (
         <NewScheduleForm

@@ -6,6 +6,7 @@ import { updateSurvey, deleteQuestion, setSurveyStatus, addQuestion, setSurveyPa
 import { AddQuestionForm } from "@/components/add-question-form";
 import { CopyLink } from "@/components/copy-link";
 import "../surveys.css";
+import { CardIcon } from "@/components/card-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -101,7 +102,10 @@ export default async function SurveyBuilder({ params }: { params: Promise<{ id: 
       {survey.status === "open" && survey.public_token && (
         <section className="card survey-link">
           <div className="card-head">
-            <h2>Share link</h2>
+            <div className="card-title">
+              <span className="spot mint"><CardIcon name="link" /></span>
+              <h2>Share link</h2>
+            </div>
             <span className="card-sub">Anyone with this link can respond</span>
           </div>
           <CopyLink path={`/survey/${survey.public_token}`} />
@@ -111,7 +115,10 @@ export default async function SurveyBuilder({ params }: { params: Promise<{ id: 
       {(canEdit || survey.paired_survey_id) && (
         <section className="card survey-pair">
           <div className="card-head">
-            <h2>Pre / Post pairing</h2>
+            <div className="card-title">
+              <span className="spot violet"><CardIcon name="compare" /></span>
+              <h2>Pre / Post pairing</h2>
+            </div>
             <span className="card-sub">Compare two surveys to see the shift</span>
           </div>
           {survey.paired_survey_id ? (
@@ -168,7 +175,10 @@ export default async function SurveyBuilder({ params }: { params: Promise<{ id: 
         {canEdit && (
           <section className="card">
             <div className="card-head">
-              <h2>Settings</h2>
+              <div className="card-title">
+                <span className="spot teal"><CardIcon name="gear" /></span>
+                <h2>Settings</h2>
+              </div>
             </div>
             <form action={updateSurvey} className="survey-settings">
               <input type="hidden" name="surveyId" value={id} />
@@ -210,7 +220,10 @@ export default async function SurveyBuilder({ params }: { params: Promise<{ id: 
         {/* questions */}
         <section className="card">
           <div className="card-head">
-            <h2>Questions</h2>
+            <div className="card-title">
+              <span className="spot coral"><CardIcon name="list" /></span>
+              <h2>Questions</h2>
+            </div>
             <span className="card-sub">{questions.length}</span>
           </div>
           {questions.length === 0 ? (

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import "./attendance.css";
+import { PageHead } from "@/components/page-head";
+import { CardIcon } from "@/components/card-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -124,14 +126,16 @@ export default async function AttendancePage() {
 
   return (
     <main className="dash">
-      <div className="dash-head">
-        <h1>Attendance</h1>
-        <p>Take attendance for today&rsquo;s sessions, or catch up on ones you missed.</p>
-      </div>
+      <PageHead href="/attendance" title="Attendance" tone="teal">
+        Take attendance for today&rsquo;s sessions, or catch up on ones you missed.
+      </PageHead>
 
       <section className="card">
         <div className="card-head">
-          <h2>Today</h2>
+          <div className="card-title">
+            <span className="spot teal"><CardIcon name="clock" /></span>
+            <h2>Today</h2>
+          </div>
           <span className="card-sub">
             {now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           </span>
@@ -149,7 +153,10 @@ export default async function AttendancePage() {
 
       <section className="card">
         <div className="card-head">
-          <h2>Needs attention</h2>
+          <div className="card-title">
+            <span className="spot coral"><CardIcon name="bell" /></span>
+            <h2>Needs attention</h2>
+          </div>
           <span className="card-sub">Past sessions with no attendance</span>
         </div>
         {needsAttention.length === 0 ? (

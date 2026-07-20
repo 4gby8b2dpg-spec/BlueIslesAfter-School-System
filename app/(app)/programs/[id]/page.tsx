@@ -10,6 +10,7 @@ import { EditCapacityForm } from "@/components/edit-capacity-form";
 import { Sparkline } from "@/components/sparkline";
 import { promoteFromWaitlist, updateProgramCapacity } from "../actions";
 import "../programs.css";
+import { CardIcon } from "@/components/card-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -241,7 +242,10 @@ export default async function ProgramDetail({
       {trendPoints >= 2 && (
         <section className="card prog-trend">
           <div className="card-head">
-            <h2>Attendance trend</h2>
+            <div className="card-title">
+              <span className="spot teal"><CardIcon name="chart" /></span>
+              <h2>Attendance trend</h2>
+            </div>
             <span className="card-sub">Last {trend.length} completed sessions</span>
           </div>
           <Sparkline points={trend} label="Attendance rate by session" />
@@ -256,7 +260,10 @@ export default async function ProgramDetail({
         {/* schedule */}
         <section className="card">
           <div className="card-head">
-            <h2>Schedule</h2>
+            <div className="card-title">
+              <span className="spot violet"><CardIcon name="calendar" /></span>
+              <h2>Schedule</h2>
+            </div>
             <span className="card-sub">{sessions.length} sessions</span>
           </div>
 
@@ -312,7 +319,10 @@ export default async function ProgramDetail({
         {/* roster */}
         <section className="card">
           <div className="card-head">
-            <h2>Roster</h2>
+            <div className="card-title">
+              <span className="spot mint"><CardIcon name="users" /></span>
+              <h2>Roster</h2>
+            </div>
             <span className="card-sub">{roster.length} enrolled</span>
           </div>
           {roster.length === 0 ? (
@@ -349,7 +359,10 @@ export default async function ProgramDetail({
         {waitlist.length > 0 && (
           <section className="card">
             <div className="card-head">
-              <h2>Waitlist</h2>
+              <div className="card-title">
+                <span className="spot amber"><CardIcon name="clock" /></span>
+                <h2>Waitlist</h2>
+              </div>
               <span className="card-sub">{waitlist.length} waiting</span>
             </div>
             <ol className="prog-waitlist">

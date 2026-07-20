@@ -3,6 +3,7 @@ import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { NewProgramForm } from "@/components/new-program-form";
 import "./programs.css";
+import { PageHead } from "@/components/page-head";
 
 export const dynamic = "force-dynamic";
 
@@ -42,13 +43,10 @@ export default async function ProgramsPage() {
 
   return (
     <main className="dash">
-      <div className="dash-head">
-        <h1>Programs</h1>
-        <p>
-          {programs.length} program{programs.length === 1 ? "" : "s"} across{" "}
+      <PageHead href="/programs" title="Programs" tone="coral">
+        {programs.length} program{programs.length === 1 ? "" : "s"} across{" "}
           {sites.length} site{sites.length === 1 ? "" : "s"}.
-        </p>
-      </div>
+      </PageHead>
 
       {canCreate && (
         <div className="new-program">

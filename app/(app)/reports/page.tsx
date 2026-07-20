@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { METRIC_DEFINITIONS } from "@/lib/metrics";
 import { ReportActions } from "@/components/report-actions";
 import "./reports.css";
+import { PageHead } from "@/components/page-head";
 
 export const dynamic = "force-dynamic";
 
@@ -227,10 +228,9 @@ export default async function ReportsPage({
 
   return (
     <main className="dash reports-page">
-      <div className="dash-head no-print">
-        <h1>Reports</h1>
-        <p>Pick a template and date range. Export to Excel, or print to PDF.</p>
-      </div>
+      <PageHead href="/reports" title="Reports" tone="coral" className="no-print">
+        Pick a template and date range. Export to Excel, or print to PDF.
+      </PageHead>
 
       {/* template gallery */}
       <div className="report-templates no-print">

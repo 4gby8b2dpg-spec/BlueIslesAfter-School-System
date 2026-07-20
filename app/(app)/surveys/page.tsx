@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createSurvey } from "./actions";
 import { NewSurveyForm } from "@/components/new-survey-form";
 import "./surveys.css";
+import { PageHead } from "@/components/page-head";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +30,9 @@ export default async function SurveysPage() {
 
   return (
     <main className="dash">
-      <div className="dash-head">
-        <h1>Surveys</h1>
-        <p>Build surveys, share a link, and read the results.</p>
-      </div>
+      <PageHead href="/surveys" title="Surveys" tone="mint">
+        Build surveys, share a link, and read the results.
+      </PageHead>
 
       {canEdit && <NewSurveyForm action={createSurvey} />}
 

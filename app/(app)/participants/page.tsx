@@ -3,6 +3,7 @@ import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { computeChronicAbsence } from "@/lib/flags";
 import "./participants.css";
+import { PageHead } from "@/components/page-head";
 
 export const dynamic = "force-dynamic";
 
@@ -118,14 +119,11 @@ export default async function ParticipantsPage({
 
   return (
     <main className="dash">
-      <div className="dash-head">
-        <h1>Participants</h1>
-        <p>
-          {rows.length} of {participants.length} participant
+      <PageHead href="/participants" title="Participants" tone="violet">
+        {rows.length} of {participants.length} participant
           {participants.length === 1 ? "" : "s"}
           {anyFilter ? " (filtered)" : ""}.
-        </p>
-      </div>
+      </PageHead>
 
       <section className="card">
         <form className="roster-filters" method="get">

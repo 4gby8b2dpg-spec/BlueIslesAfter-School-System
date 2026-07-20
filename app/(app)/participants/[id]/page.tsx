@@ -6,6 +6,7 @@ import { enrollParticipant, withdrawEnrollment } from "../actions";
 import { getParticipantFlag, FLAG_LABEL } from "@/lib/flags";
 import { getParticipantBadges } from "@/lib/recognition";
 import "../participants.css";
+import { CardIcon } from "@/components/card-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -155,7 +156,10 @@ export default async function ParticipantProfile({
       {badges.length > 0 && (
         <section className="card recognition-card">
           <div className="card-head">
-            <h2>Recognition</h2>
+            <div className="card-title">
+              <span className="spot amber"><CardIcon name="award" /></span>
+              <h2>Recognition</h2>
+            </div>
             <span className="card-sub">{badges.length}</span>
           </div>
           <ul className="badge-shelf">
@@ -185,7 +189,10 @@ export default async function ParticipantProfile({
         {/* enrollments */}
         <section className="card">
           <div className="card-head">
-            <h2>Enrollments</h2>
+            <div className="card-title">
+              <span className="spot violet"><CardIcon name="users" /></span>
+              <h2>Enrollments</h2>
+            </div>
             <span className="card-sub">{activeEnrollments.length} active</span>
           </div>
           {enrollments.length === 0 ? (
@@ -235,7 +242,10 @@ export default async function ParticipantProfile({
         {/* attendance */}
         <section className="card">
           <div className="card-head">
-            <h2>Attendance</h2>
+            <div className="card-title">
+              <span className="spot teal"><CardIcon name="check" /></span>
+              <h2>Attendance</h2>
+            </div>
             <span className="card-sub">{tot} records</span>
           </div>
           {recent.length === 0 ? (
@@ -264,7 +274,10 @@ export default async function ParticipantProfile({
         {/* contacts */}
         <section className="card">
           <div className="card-head">
-            <h2>Contacts</h2>
+            <div className="card-title">
+              <span className="spot mint"><CardIcon name="user" /></span>
+              <h2>Contacts</h2>
+            </div>
           </div>
           {guardians.length === 0 ? (
             <p className="empty">No guardians on file.</p>
@@ -291,7 +304,10 @@ export default async function ParticipantProfile({
         {/* flags */}
         <section className="card">
           <div className="card-head">
-            <h2>Flags</h2>
+            <div className="card-title">
+              <span className="spot coral"><CardIcon name="flag" /></span>
+              <h2>Flags</h2>
+            </div>
           </div>
           {!flag ? (
             <p className="empty good">No open flags.</p>

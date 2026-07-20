@@ -379,10 +379,11 @@
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 11px 13px;
-  border: 1px solid var(--border);
-  border-radius: 11px;
-  background: var(--surface);
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 13px;
+  background: var(--card);
+  box-shadow: var(--shadow);
 }
 .badge-emoji {
   font-size: 24px;
@@ -403,21 +404,27 @@
   font-size: 12px;
   color: var(--muted);
 }
-/* accent stripe by badge kind */
+/* Each badge kind gets its own soft gradient wash + matching edge, so a shelf
+   of badges reads as a set of distinct awards rather than a list of rows. */
 .badge-milestone {
-  border-left: 3px solid #d97706;
+  background: linear-gradient(135deg, #fef6ea 0%, #ffffff 62%);
+  border-left: 3px solid var(--cat-4);
 }
 .badge-improvement {
-  border-left: 3px solid #0d9488;
+  background: linear-gradient(135deg, #e8f6f4 0%, #ffffff 62%);
+  border-left: 3px solid var(--cat-1);
 }
 .badge-streak {
-  border-left: 3px solid #dc2626;
+  background: linear-gradient(135deg, #fdeeec 0%, #ffffff 62%);
+  border-left: 3px solid var(--cat-3);
 }
 .badge-consistency {
-  border-left: 3px solid #2563eb;
+  background: linear-gradient(135deg, #e8f2fb 0%, #ffffff 62%);
+  border-left: 3px solid var(--cat-5);
 }
 .badge-engagement {
-  border-left: 3px solid #7c3aed;
+  background: linear-gradient(135deg, #efedfd 0%, #ffffff 62%);
+  border-left: 3px solid var(--cat-2);
 }
 
 .badge {

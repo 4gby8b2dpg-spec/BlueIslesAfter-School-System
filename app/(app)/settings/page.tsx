@@ -1,5 +1,6 @@
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
+import { PageHead } from "@/components/page-head";
 import {
   updateMemberRole,
   setMemberStatus,
@@ -12,6 +13,7 @@ import {
 } from "./actions";
 import { getFlagThresholds } from "@/lib/flags";
 import "./settings.css";
+import { CardIcon } from "@/components/card-icon";
 
 export const dynamic = "force-dynamic";
 
@@ -23,10 +25,9 @@ export default async function SettingsPage() {
   if (ctx.role !== "admin") {
     return (
       <main className="dash">
-        <div className="dash-head">
-          <h1>Settings</h1>
-          <p>Administration is limited to admins.</p>
-        </div>
+        <PageHead href="/settings" title="Settings" tone="teal">
+          Administration is limited to admins.
+        </PageHead>
         <section className="card">
           <p className="empty">
             You&rsquo;re signed in as <strong>{ctx.role}</strong>. Ask an admin for access
@@ -81,15 +82,17 @@ export default async function SettingsPage() {
 
   return (
     <main className="dash">
-      <div className="dash-head">
-        <h1>Settings</h1>
-        <p>Manage users, sites, terms, and review the audit log.</p>
-      </div>
+      <PageHead href="/settings" title="Settings" tone="teal">
+        Manage users, sites, terms, and review the audit log.
+      </PageHead>
 
       {/* USERS */}
       <section className="card">
         <div className="card-head">
-          <h2>Users &amp; roles</h2>
+          <div className="card-title">
+            <span className="spot violet"><CardIcon name="users" /></span>
+            <h2>Users &amp; roles</h2>
+          </div>
           <span className="card-sub">{members.length} in this organization</span>
         </div>
         <div className="settings-scroll">
@@ -161,7 +164,10 @@ export default async function SettingsPage() {
       {/* ALERT THRESHOLDS */}
       <section className="card">
         <div className="card-head">
-          <h2>Alert thresholds</h2>
+          <div className="card-title">
+            <span className="spot coral"><CardIcon name="sliders" /></span>
+            <h2>Alert thresholds</h2>
+          </div>
           <span className="card-sub">Drives the dashboard flags</span>
         </div>
         <form action={updateThresholds} className="threshold-form">
@@ -233,7 +239,10 @@ export default async function SettingsPage() {
       <div className="settings-grid">
         <section className="card">
           <div className="card-head">
-            <h2>Sites</h2>
+            <div className="card-title">
+              <span className="spot mint"><CardIcon name="pin" /></span>
+              <h2>Sites</h2>
+            </div>
             <span className="card-sub">{sites.length}</span>
           </div>
           <ul className="settings-list">
@@ -281,7 +290,10 @@ export default async function SettingsPage() {
 
         <section className="card">
           <div className="card-head">
-            <h2>Terms</h2>
+            <div className="card-title">
+              <span className="spot violet"><CardIcon name="calendar" /></span>
+              <h2>Terms</h2>
+            </div>
             <span className="card-sub">{terms.length}</span>
           </div>
           <ul className="settings-list">
@@ -326,7 +338,10 @@ export default async function SettingsPage() {
       {/* AUDIT LOG */}
       <section className="card">
         <div className="card-head">
-          <h2>Audit log</h2>
+          <div className="card-title">
+            <span className="spot teal"><CardIcon name="list" /></span>
+            <h2>Audit log</h2>
+          </div>
           <span className="card-sub">Most recent 30</span>
         </div>
         {audit.length === 0 ? (
