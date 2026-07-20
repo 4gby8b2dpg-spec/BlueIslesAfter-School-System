@@ -6,17 +6,20 @@
   margin-bottom: 18px;
 }
 .recog-stat {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 18px;
+  background: linear-gradient(165deg, #ffffff 0%, #f5faf8 100%);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 .recog-stat-val {
-  font-size: 26px;
-  font-weight: 700;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.05;
   color: var(--ink);
 }
 .recog-stat-lbl {

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { METRIC_DEFINITIONS, type MetricKey as CanonMetricKey } from "@/lib/metrics";
 import { ExplorerExport } from "@/components/explorer-export";
 import { Sparkline } from "@/components/sparkline";
+import { PageHead } from "@/components/page-head";
 
 export const dynamic = "force-dynamic";
 
@@ -275,10 +276,9 @@ export default async function AnalyticsPage({
 
   return (
     <main className="dash">
-      <div className="dash-head">
-        <h1>Analytics Explorer</h1>
-        <p>Slice a metric by a dimension or track it over time — the numbers behind the dashboard.</p>
-      </div>
+      <PageHead href="/analytics" title="Analytics Explorer" tone="violet">
+        Slice a metric by a dimension or track it over time — the numbers behind the dashboard.
+      </PageHead>
 
       {/* date range */}
       <form className="explorer-range" method="get">

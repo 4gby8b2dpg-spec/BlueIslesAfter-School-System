@@ -12,6 +12,7 @@ export function Sparkline({
   yMax,
   grid = false,
   unit = "",
+  area = false,
 }: {
   points: (number | null)[];
   label?: string;
@@ -19,6 +20,7 @@ export function Sparkline({
   yMax?: number;
   grid?: boolean;
   unit?: string;
+  area?: boolean;
 }) {
   if (points.length < 2) return null;
   const present = points.filter((p): p is number => p != null);
@@ -40,6 +42,14 @@ export function Sparkline({
   const gridYs = grid ? [0, 0.25, 0.5, 0.75, 1].map((f) => h * f) : [];
   const fmt = (v: number) => `${Math.round(v * 10) / 10}${unit}`;
 
+  // Optional soft fill under the line. Built from the drawn points only, so a
+  // gap in the data doesn't drag the shape down to the baseline.
+  const gradId = `spark-fill-${label.replace(/[^a-z0-9]/gi, "").slice(0, 24)}`;
+  const areaPath =
+    area && coords.length >= 2
+      ? `M${coords[0].split(",")[0]},${h} L${coords.join(" L")} L${coords[coords.length - 1].split(",")[0]},${h} Z`
+      : null;
+
   const svg = (
     <svg
       className="spark"
@@ -48,6 +58,14 @@ export function Sparkline({
       role="img"
       aria-label={label}
     >
+      {areaPath && (
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#0D9488" stopOpacity="0.22" />
+            <stop offset="1" stopColor="#0D9488" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+      )}
       {gridYs.map((gy, i) => (
         <line
           key={i}
@@ -59,6 +77,7 @@ export function Sparkline({
           vectorEffect="non-scaling-stroke"
         />
       ))}
+      {areaPath && <path d={areaPath} fill={`url(#${gradId})`} />}
       <polyline
         points={coords.join(" ")}
         fill="none"

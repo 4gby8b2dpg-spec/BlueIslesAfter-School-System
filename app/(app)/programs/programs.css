@@ -165,16 +165,16 @@
   margin: 18px 0;
 }
 .ps-tile {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 18px;
+  background: linear-gradient(165deg, #ffffff 0%, #f5faf8 100%);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 18px;
   box-shadow: var(--shadow);
 }
 .ps-val {
   font-family: Fraunces, Georgia, serif;
   font-size: 28px;
-  font-weight: 560;
+  font-weight: 600;
   line-height: 1;
 }
 .ps-cap {

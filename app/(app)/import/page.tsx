@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ImportWizard, type ExistingParticipant } from "@/components/import-wizard";
 import { rollbackImport } from "./actions";
 import "./import.css";
+import { PageHead } from "@/components/page-head";
 
 export const dynamic = "force-dynamic";
 
@@ -39,10 +40,9 @@ export default async function ImportPage() {
 
   return (
     <main className="dash">
-      <div className="dash-head">
-        <h1>Data Import</h1>
-        <p>Drop your spreadsheets in. Map columns, catch problems, then commit.</p>
-      </div>
+      <PageHead href="/import" title="Data Import" tone="mint">
+        Drop your spreadsheets in. Map columns, catch problems, then commit.
+      </PageHead>
 
       <ImportWizard existing={existingParticipants} />
 

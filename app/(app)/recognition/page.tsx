@@ -3,6 +3,7 @@ import { requireAppContext } from "@/lib/auth-context";
 import { getRecognitionBoard } from "@/lib/recognition";
 import "../participants/participants.css";
 import "./recognition.css";
+import { PageHead } from "@/components/page-head";
 
 export const dynamic = "force-dynamic";
 
@@ -18,13 +19,10 @@ export default async function RecognitionPage() {
 
   return (
     <main className="dash">
-      <div className="dash-head">
-        <h1>Recognition</h1>
-        <p>
-          Effort, improvement, and consistency — earned automatically from attendance. Reward
+      <PageHead href="/recognition" title="Recognition" tone="amber">
+        Effort, improvement, and consistency — earned automatically from attendance. Reward
           showing up and growth, not a spotless record.
-        </p>
-      </div>
+      </PageHead>
 
       {board.length === 0 ? (
         <section className="card">
