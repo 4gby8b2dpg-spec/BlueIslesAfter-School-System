@@ -212,8 +212,13 @@ export async function createCalendarFeed(formData: FormData) {
   const ctx = await requireAdmin();
   if (!ctx) return;
 
-  const rawSite = String(formData.get("siteId") ?? "").trim();
-  const siteId = rawSite === "" || rawSite === "all" ? null : rawSite;
+  // scope is "all", a site id, or "staff:<userId>" — a feed is never both
+  const scope = String(formData.get("scope") ?? "all").trim();
+  let siteId: string | null = null;
+  let userId: string | null = null;
+  if (scope.startsWith("staff:")) userId = scope.slice(6) || null;
+  else if (scope !== "" && scope !== "all") siteId = scope;
+
   const label = String(formData.get("label") ?? "").trim() || "Program calendar";
   const token = newFeedToken();
 
@@ -223,6 +228,7 @@ export async function createCalendarFeed(formData: FormData) {
     .insert({
       org_id: ctx.orgId,
       site_id: siteId,
+      user_id: userId,
       label,
       token,
       created_by: ctx.userId,
@@ -234,6 +240,7 @@ export async function createCalendarFeed(formData: FormData) {
   await logAudit(supabase, ctx.orgId, ctx.userId, "create", "calendar_feeds", data?.id ?? null, null, {
     label,
     site_id: siteId,
+    user_id: userId,
   });
   revalidatePath("/settings");
 }
