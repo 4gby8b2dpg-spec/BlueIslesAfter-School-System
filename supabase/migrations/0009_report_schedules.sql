@@ -76,7 +76,8 @@ create policy report_deliveries_read on report_deliveries
   for select using (public.is_org_member(org_id));
 
 -- Deliveries are written by the cron under the service role (which bypasses
--- RLS), so members get read-only visibility and no insert policy is needed.
+-- RLS). The manual "Send now" path runs under the caller's own session, so it
+-- needs an explicit insert policy — added in 0010.
 
 -- PostgREST caches the schema; nudge it so the new tables are visible at once.
 notify pgrst, 'reload schema';
