@@ -10,7 +10,11 @@ import {
   deleteSite,
   deleteTerm,
   updateThresholds,
+  createCalendarFeed,
+  revokeCalendarFeed,
 } from "./actions";
+import { CopyField } from "@/components/copy-field";
+import { headers } from "next/headers";
 import { getFlagThresholds } from "@/lib/flags";
 import "./settings.css";
 import { CardIcon } from "@/components/card-icon";
@@ -56,6 +60,20 @@ export default async function SettingsPage() {
     getFlagThresholds(ctx.orgId),
   ]);
 
+  const { data: feedRows } = await supabase
+    .from("calendar_feeds")
+    .select("id, label, site_id, token")
+    .eq("org_id", ctx.orgId)
+    .is("revoked_at", null)
+    .order("created_at", { ascending: true });
+  const feeds = feedRows ?? [];
+
+  // Feed URLs must be absolute — they're pasted into external calendar apps.
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const host = h.get("host") ?? "localhost:3210";
+  const baseUrl = `${proto}://${host}`;
+
   const members = (membersRes.data ?? []) as unknown as {
     id: string;
     role: string;
@@ -64,6 +82,7 @@ export default async function SettingsPage() {
     profiles: { email: string | null; full_name: string | null } | null;
   }[];
   const sites = sitesRes.data ?? [];
+  const siteName = new Map(sites.map((s) => [s.id, s.name]));
   const terms = termsRes.data ?? [];
   const programs = programsRes.data ?? [];
   const siteUse = new Map<string, number>();
@@ -334,6 +353,60 @@ export default async function SettingsPage() {
           </form>
         </section>
       </div>
+
+      {/* CALENDAR FEEDS */}
+      <section className="card">
+        <div className="card-head">
+          <div className="card-title">
+            <span className="spot amber"><CardIcon name="calendar" /></span>
+            <h2>Calendar feeds</h2>
+          </div>
+          <span className="card-sub">Subscribe in Google, Outlook, or Apple Calendar</span>
+        </div>
+        <ul className="feed-list">
+          {feeds.map((f) => (
+            <li key={f.id} className="feed-row">
+              <span className="feed-meta">
+                <span className="feed-label">{f.label}</span>
+                <span className="feed-scope">
+                  {f.site_id ? (siteName.get(f.site_id) ?? "Site") : "All sites"}
+                </span>
+              </span>
+              <CopyField value={`${baseUrl}/api/calendar/${f.token}`} label={`${f.label} feed URL`} />
+              <form action={revokeCalendarFeed}>
+                <input type="hidden" name="feedId" value={f.id} />
+                <button className="link-btn danger" type="submit">
+                  Revoke
+                </button>
+              </form>
+            </li>
+          ))}
+          {feeds.length === 0 && (
+            <li className="empty">
+              No feeds yet. Create one to publish the schedule to a staff calendar.
+            </li>
+          )}
+        </ul>
+        <form action={createCalendarFeed} className="inline-add">
+          <input name="label" placeholder="e.g. Staff schedule" required />
+          <select name="siteId" defaultValue="all" aria-label="Site for this feed">
+            <option value="all">All sites</option>
+            {sites.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <button className="btn-primary" type="submit">
+            Create feed
+          </button>
+        </form>
+        <p className="settings-note">
+          Anyone with a feed URL can read that schedule, so share it like a password.
+          Revoking a feed stops it updating immediately; subscribers keep whatever
+          their calendar already downloaded.
+        </p>
+      </section>
 
       {/* AUDIT LOG */}
       <section className="card">

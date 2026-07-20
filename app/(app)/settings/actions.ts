@@ -197,3 +197,60 @@ export async function updateThresholds(formData: FormData) {
   revalidatePath("/settings");
   revalidatePath("/dashboard");
 }
+
+// ---------------------------------------------------------------------
+// Calendar feeds (0007, FR-E.5). A feed URL carries a secret token, so
+// creating or revoking one is an admin action and is audited.
+// ---------------------------------------------------------------------
+function newFeedToken() {
+  // 32 hex chars from the Web Crypto API — unguessable and URL-safe.
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export async function createCalendarFeed(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+
+  const rawSite = String(formData.get("siteId") ?? "").trim();
+  const siteId = rawSite === "" || rawSite === "all" ? null : rawSite;
+  const label = String(formData.get("label") ?? "").trim() || "Program calendar";
+  const token = newFeedToken();
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("calendar_feeds")
+    .insert({
+      org_id: ctx.orgId,
+      site_id: siteId,
+      label,
+      token,
+      created_by: ctx.userId,
+    })
+    .select("id")
+    .maybeSingle();
+  if (error) return;
+
+  await logAudit(supabase, ctx.orgId, ctx.userId, "create", "calendar_feeds", data?.id ?? null, null, {
+    label,
+    site_id: siteId,
+  });
+  revalidatePath("/settings");
+}
+
+export async function revokeCalendarFeed(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  const feedId = String(formData.get("feedId") ?? "").trim();
+  if (!feedId) return;
+
+  const supabase = await createClient();
+  await supabase
+    .from("calendar_feeds")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("id", feedId)
+    .eq("org_id", ctx.orgId);
+
+  await logAudit(supabase, ctx.orgId, ctx.userId, "revoke", "calendar_feeds", feedId, null, null);
+  revalidatePath("/settings");
+}
