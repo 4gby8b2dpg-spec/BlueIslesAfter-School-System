@@ -2,7 +2,12 @@
 
 import { useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { commitImport, type ImportRowInput } from "@/app/(app)/import/actions";
+import {
+  commitImport,
+  commitProgramImport,
+  type ImportRowInput,
+  type ProgramRowInput,
+} from "@/app/(app)/import/actions";
 
 // Existing participants passed from the server, for duplicate detection.
 export type ExistingParticipant = {
@@ -12,7 +17,12 @@ export type ExistingParticipant = {
   dob: string | null;
 };
 
-const FIELDS = [
+// Sites the org already has, so a "Site" column can be matched to a real id.
+export type SiteOption = { id: string; name: string };
+
+type ImportType = "participants" | "programs";
+
+const PARTICIPANT_FIELDS = [
   { key: "", label: "— Skip —" },
   { key: "full_name", label: "Full name (split to first + last)" },
   { key: "first_name", label: "First name" },
@@ -24,9 +34,21 @@ const FIELDS = [
   { key: "gender", label: "Gender" },
 ] as const;
 
-type FieldKey = (typeof FIELDS)[number]["key"];
+const PROGRAM_FIELDS = [
+  { key: "", label: "— Skip —" },
+  { key: "name", label: "Program name" },
+  { key: "category", label: "Category" },
+  { key: "capacity", label: "Capacity" },
+  { key: "site", label: "Site (matched by name)" },
+] as const;
 
-function suggest(header: string): FieldKey {
+type FieldKey = string;
+
+function fieldsFor(type: ImportType): readonly { key: string; label: string }[] {
+  return type === "programs" ? PROGRAM_FIELDS : PARTICIPANT_FIELDS;
+}
+
+function suggestParticipant(header: string): FieldKey {
   const h = header.toLowerCase().replace(/[^a-z]/g, "");
   if (/(^|\b)(dob|dateofbirth|birth|birthday|birthdate)/.test(h)) return "date_of_birth";
   if (/(firstname|first|given|fname)/.test(h)) return "first_name";
@@ -37,6 +59,23 @@ function suggest(header: string): FieldKey {
   if (/(school|campus)/.test(h)) return "school";
   if (/(gender|sex)/.test(h)) return "gender";
   return "";
+}
+
+function suggestProgram(header: string): FieldKey {
+  const h = header.toLowerCase().replace(/[^a-z]/g, "");
+  if (/(capacity|maxseats|seats|maxsize|classsize|limit|cap)/.test(h)) return "capacity";
+  if (/(category|type|subject|area|kind)/.test(h)) return "category";
+  if (/(site|campus|location|building)/.test(h)) return "site";
+  if (/(programname|classname|activity|program|class|name|title)/.test(h)) return "name";
+  return "";
+}
+
+function suggestFor(type: ImportType, header: string): FieldKey {
+  return type === "programs" ? suggestProgram(header) : suggestParticipant(header);
+}
+
+function buildMapping(type: ImportType, headers: string[]): Record<string, FieldKey> {
+  return Object.fromEntries(headers.map((h) => [h, suggestFor(type, h)]));
 }
 
 function normalizeDate(v: string): { ok: boolean; val: string | null } {
@@ -61,23 +100,26 @@ function iso(d: Date) {
   ).padStart(2, "0")}`;
 }
 
-type MappedRow = {
+type ReviewRow = {
   rowNumber: number;
   raw: Record<string, string>;
-  fields: {
-    first_name: string;
-    last_name: string;
-    external_id: string | null;
-    date_of_birth: string | null;
-    grade: string | null;
-    school: string | null;
-    gender: string | null;
-  };
+  label: string; // display name for the review table
+  participant?: ImportRowInput["fields"];
+  program?: ProgramRowInput["fields"];
   problems: string[];
   duplicate: boolean;
 };
 
-export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) {
+export function ImportWizard({
+  existing,
+  existingPrograms,
+  sites,
+}: {
+  existing: ExistingParticipant[];
+  existingPrograms: string[];
+  sites: SiteOption[];
+}) {
+  const [importType, setImportType] = useState<ImportType>("participants");
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const wbRef = useRef<XLSX.WorkBook | null>(null);
   const [fileName, setFileName] = useState("");
@@ -91,6 +133,9 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
   const [result, setResult] = useState<{ committed: number; skipped: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+
+  const fields = fieldsFor(importType);
+  const noun = importType === "programs" ? "program" : "participant";
 
   function loadSheet(wb: XLSX.WorkBook, name: string) {
     const ws = wb.Sheets[name];
@@ -107,7 +152,7 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
     setSheet(name);
     setHeaders(hdrs);
     setRows(dataRows);
-    setMapping(Object.fromEntries(hdrs.map((h) => [h, suggest(h)])));
+    setMapping(buildMapping(importType, hdrs));
   }
 
   async function onFile(file: File) {
@@ -124,14 +169,68 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
     }
   }
 
+  // Re-guess the column mapping when the user changes what the file contains.
+  function changeImportType(next: ImportType) {
+    setImportType(next);
+    setMapping(buildMapping(next, headers));
+  }
+
   const mappedFields = new Set(Object.values(mapping));
   const hasName =
     mappedFields.has("full_name") ||
     (mappedFields.has("first_name") && mappedFields.has("last_name"));
+  const hasProgramName = mappedFields.has("name");
+  const hasRequired = importType === "programs" ? hasProgramName : hasName;
 
   // ---- build mapped + validated rows for review ----
-  const review = useMemo<MappedRow[]>(() => {
+  const review = useMemo<ReviewRow[]>(() => {
     if (step < 3) return [];
+    const get = (raw: Record<string, string>, fk: FieldKey) => {
+      const col = Object.keys(mapping).find((h) => mapping[h] === fk);
+      return col ? (raw[col] ?? "").trim() : "";
+    };
+
+    if (importType === "programs") {
+      const siteByName = new Map(sites.map((s) => [s.name.trim().toLowerCase(), s.id]));
+      const existNames = new Set(existingPrograms.map((n) => n.trim().toLowerCase()));
+      return rows.map((raw, idx) => {
+        const name = get(raw, "name");
+        const category = get(raw, "category") || null;
+        const capRaw = get(raw, "capacity");
+        const siteName = get(raw, "site");
+
+        const problems: string[] = [];
+        if (!name) problems.push("missing program name");
+
+        let capacity: number | null = null;
+        if (capRaw) {
+          const n = Number(capRaw);
+          if (!Number.isFinite(n) || n <= 0 || !Number.isInteger(n)) {
+            problems.push("capacity must be a whole number");
+          } else {
+            capacity = n;
+          }
+        }
+
+        let site_id: string | null = null;
+        if (siteName) {
+          const match = siteByName.get(siteName.toLowerCase());
+          if (match) site_id = match;
+          else problems.push(`unknown site "${siteName}"`);
+        }
+
+        return {
+          rowNumber: idx + 2,
+          raw,
+          label: name,
+          program: { name, category, capacity, site_id },
+          problems,
+          duplicate: name ? existNames.has(name.toLowerCase()) : false,
+        };
+      });
+    }
+
+    // participants
     const existExt = new Set(
       existing.map((e) => (e.externalId ?? "").toLowerCase()).filter(Boolean),
     );
@@ -139,21 +238,17 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
       existing.map((e) => `${e.first}|${e.last}|${e.dob ?? ""}`.toLowerCase()),
     );
     return rows.map((raw, idx) => {
-      const get = (fk: FieldKey) => {
-        const col = Object.keys(mapping).find((h) => mapping[h] === fk);
-        return col ? (raw[col] ?? "").trim() : "";
-      };
-      let first = get("first_name");
-      let last = get("last_name");
+      let first = get(raw, "first_name");
+      let last = get(raw, "last_name");
       if (mappedFields.has("full_name")) {
-        const full = get("full_name");
+        const full = get(raw, "full_name");
         const parts = full.split(/\s+/);
         first = first || parts[0] || "";
         last = last || (parts.length > 1 ? parts.slice(1).join(" ") : "");
       }
-      const dobRaw = get("date_of_birth");
+      const dobRaw = get(raw, "date_of_birth");
       const dob = normalizeDate(dobRaw);
-      const extId = get("external_id") || null;
+      const extId = get(raw, "external_id") || null;
 
       const problems: string[] = [];
       if (!first) problems.push("missing first name");
@@ -161,26 +256,26 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
       if (dobRaw && !dob.ok) problems.push("unreadable date of birth");
 
       const dupByExt = extId ? existExt.has(extId.toLowerCase()) : false;
-      const dupByName = existName.has(
-        `${first}|${last}|${dob.val ?? ""}`.toLowerCase(),
-      );
+      const dupByName = existName.has(`${first}|${last}|${dob.val ?? ""}`.toLowerCase());
       return {
         rowNumber: idx + 2,
         raw,
-        fields: {
+        label: [first, last].filter(Boolean).join(" "),
+        participant: {
           first_name: first,
           last_name: last,
           external_id: extId,
           date_of_birth: dob.val,
-          grade: get("grade") || null,
-          school: get("school") || null,
-          gender: get("gender") || null,
+          grade: get(raw, "grade") || null,
+          school: get(raw, "school") || null,
+          gender: get(raw, "gender") || null,
         },
         problems,
         duplicate: dupByExt || dupByName,
       };
     });
-  }, [step, rows, mapping, existing, mappedFields]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, rows, mapping, existing, existingPrograms, sites, importType]);
 
   const errored = review.filter((r) => r.problems.length > 0);
   const dupes = review.filter((r) => r.problems.length === 0 && r.duplicate);
@@ -190,18 +285,30 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
   async function onCommit() {
     setCommitting(true);
     setError(null);
-    const payloadRows: ImportRowInput[] = willCommit.map((r) => ({
-      rowNumber: r.rowNumber,
-      raw: r.raw,
-      fields: r.fields,
-    }));
-    const res = await commitImport({
+    const meta = {
       fileName,
       sheetName: sheet || null,
       rowsTotal: rows.length,
-      rowsSkipped: rows.length - payloadRows.length,
-      rows: payloadRows,
-    });
+      rowsSkipped: rows.length - willCommit.length,
+    };
+    const res =
+      importType === "programs"
+        ? await commitProgramImport({
+            ...meta,
+            rows: willCommit.map((r) => ({
+              rowNumber: r.rowNumber,
+              raw: r.raw,
+              fields: r.program!,
+            })),
+          })
+        : await commitImport({
+            ...meta,
+            rows: willCommit.map((r) => ({
+              rowNumber: r.rowNumber,
+              raw: r.raw,
+              fields: r.participant!,
+            })),
+          });
     setCommitting(false);
     if (!res.ok) {
       setError(res.error);
@@ -293,22 +400,28 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
 
           <div className="wz-inline">
             Import as:
-            <select defaultValue="participants" aria-label="What this file contains">
+            <select
+              value={importType}
+              onChange={(e) => changeImportType(e.target.value as ImportType)}
+              aria-label="What this file contains"
+            >
               <option value="participants">Participants</option>
+              <option value="programs">Programs</option>
               <option value="attendance" disabled>
                 Attendance history — coming soon
               </option>
               <option value="enrollments" disabled>
                 Enrollments — coming soon
               </option>
-              <option value="programs" disabled>
-                Programs — coming soon
-              </option>
               <option value="survey_responses" disabled>
                 Survey responses — coming soon
               </option>
             </select>
-            <span className="wz-hint">Participants import is live; the others are on the way.</span>
+            <span className="wz-hint">
+              {importType === "programs"
+                ? "Rows become programs. Map a name; category, capacity and site are optional."
+                : "Participants and programs imports are live; the others are on the way."}
+            </span>
           </div>
 
           <div className="wz-actions">
@@ -323,8 +436,8 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
       {step === 2 && (
         <div className="wz-body">
           <p className="wz-lead">
-            Match each column in your file to a participant field. We&rsquo;ve guessed
-            where we could.
+            Match each column in your file to a {noun} field. We&rsquo;ve guessed where we
+            could.
           </p>
           <div className="map-grid">
             <div className="map-head">Your column</div>
@@ -340,7 +453,7 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
                       setMapping((m) => ({ ...m, [h]: e.target.value as FieldKey }))
                     }
                   >
-                    {FIELDS.map((f) => (
+                    {fields.map((f) => (
                       <option key={f.key} value={f.key}>
                         {f.label}
                       </option>
@@ -351,17 +464,25 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
               </div>
             ))}
           </div>
-          {!hasName && (
+          {!hasRequired && (
             <p className="wz-warn">
-              Map a <strong>Full name</strong>, or both <strong>First</strong> and{" "}
-              <strong>Last name</strong>, to continue.
+              {importType === "programs" ? (
+                <>
+                  Map a <strong>Program name</strong> to continue.
+                </>
+              ) : (
+                <>
+                  Map a <strong>Full name</strong>, or both <strong>First</strong> and{" "}
+                  <strong>Last name</strong>, to continue.
+                </>
+              )}
             </p>
           )}
           <div className="wz-actions">
             <button className="btn-ghost" onClick={() => setStep(1)}>
               ← Back
             </button>
-            <button className="btn-primary" disabled={!hasName} onClick={() => setStep(3)}>
+            <button className="btn-primary" disabled={!hasRequired} onClick={() => setStep(3)}>
               Next: review →
             </button>
           </div>
@@ -390,7 +511,9 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
                 checked={skipDuplicates}
                 onChange={(e) => setSkipDuplicates(e.target.checked)}
               />
-              Skip likely duplicates (match on student ID, or name + date of birth)
+              {importType === "programs"
+                ? "Skip likely duplicates (match on program name)"
+                : "Skip likely duplicates (match on student ID, or name + date of birth)"}
             </label>
           )}
 
@@ -408,10 +531,7 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
                   {errored.concat(dupes).slice(0, 50).map((r) => (
                     <tr key={r.rowNumber}>
                       <td className="num">{r.rowNumber}</td>
-                      <td>
-                        {[r.fields.first_name, r.fields.last_name].filter(Boolean).join(" ") ||
-                          "—"}
-                      </td>
+                      <td>{r.label || "—"}</td>
                       <td>
                         {r.problems.length > 0 ? (
                           <span className="tag-crit">{r.problems.join(", ")}</span>
@@ -433,7 +553,7 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
             <button className="btn-primary" disabled={committing || willCommit.length === 0} onClick={onCommit}>
               {committing
                 ? "Importing…"
-                : `Commit import · creates ${willCommit.length} participant${willCommit.length === 1 ? "" : "s"}`}
+                : `Commit import · creates ${willCommit.length} ${noun}${willCommit.length === 1 ? "" : "s"}`}
             </button>
           </div>
         </div>
@@ -447,7 +567,7 @@ export function ImportWizard({ existing }: { existing: ExistingParticipant[] }) 
           </div>
           <h3>Import complete</h3>
           <p>
-            Created <strong>{result.committed}</strong> participant
+            Created <strong>{result.committed}</strong> {noun}
             {result.committed === 1 ? "" : "s"}
             {result.skipped > 0 ? ` · ${result.skipped} skipped` : ""}.
           </p>
