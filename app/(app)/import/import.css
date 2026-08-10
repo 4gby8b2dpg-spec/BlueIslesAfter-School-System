@@ -313,7 +313,24 @@
 .status.failed {
   color: var(--crit);
 }
+.status.validating {
+  color: var(--warn);
+}
 /* .link-btn now lives in the shared app stylesheet (app.css). */
+.link-btn.danger {
+  color: #b3261e;
+}
+.link-btn.danger:hover {
+  color: #8f1c16;
+}
+
+/* wider history table scrolls rather than blowing out the page on narrow screens */
+.history-scroll {
+  overflow-x: auto;
+}
+.history-scroll .history-table {
+  min-width: 720px;
+}
 
 @media (max-width: 720px) {
   .review-summary {

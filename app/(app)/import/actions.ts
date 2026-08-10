@@ -103,6 +103,19 @@ export async function rollbackImport(importId: string) {
   }
   const supabase = await createClient();
 
+  // Confirm the import belongs to this org and is actually rollback-eligible,
+  // so a stale/forged id can't delete another org's data or double-roll.
+  const { data: imp } = await supabase
+    .from("imports")
+    .select("id, file_name, status")
+    .eq("id", importId)
+    .eq("org_id", ctx.orgId)
+    .maybeSingle();
+  if (!imp) return { ok: false as const, error: "Import not found." };
+  if (imp.status !== "committed") {
+    return { ok: false as const, error: "Only a committed import can be rolled back." };
+  }
+
   const { data: rows } = await supabase
     .from("import_rows")
     .select("created_record_id")
@@ -115,10 +128,26 @@ export async function rollbackImport(importId: string) {
 
   if (ids.length) {
     // Hard-delete the rows this import created (cascades dependents), so the
-    // rollback actually clears them from every view.
-    await supabase.from("participants").delete().in("id", ids);
+    // rollback actually clears them from every view. A soft-delete would leave
+    // them counted in analytics/reports, which don't all filter deleted_at.
+    await supabase.from("participants").delete().in("id", ids).eq("org_id", ctx.orgId);
   }
-  await supabase.from("imports").update({ status: "rolled_back" }).eq("id", importId);
+  await supabase
+    .from("imports")
+    .update({ status: "rolled_back" })
+    .eq("id", importId)
+    .eq("org_id", ctx.orgId);
+
+  // Rollback is destructive — record who undid what.
+  await supabase.from("audit_log").insert({
+    org_id: ctx.orgId,
+    actor_id: ctx.userId,
+    action: "rollback",
+    entity_table: "imports",
+    entity_id: importId,
+    before: { status: "committed", file_name: imp.file_name },
+    after: { status: "rolled_back", participants_removed: ids.length },
+  });
 
   revalidatePath("/import");
   revalidatePath("/dashboard");
