@@ -16,6 +16,12 @@ export const NAV: NavItem[] = [
     blurb: "Profiles, guardians, consent flags, and searchable rosters with bulk actions.",
   },
   {
+    href: "/registrations",
+    label: "Registrations",
+    title: "Registrations",
+    blurb: "Review parent-submitted registrations and approve them into participants and enrollment.",
+  },
+  {
     href: "/programs",
     label: "Programs",
     title: "Programs & Planning",
