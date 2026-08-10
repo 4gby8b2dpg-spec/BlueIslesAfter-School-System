@@ -24,6 +24,13 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
     </>
   ),
+  "/registrations": (
+    <>
+      <path d="M9 11l3 3 5-5" />
+      <path d="M20 8v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7" />
+      <path d="M15 3h5v5" />
+    </>
+  ),
   "/programs": (
     <>
       <rect x="3" y="4" width="18" height="16" rx="2" />
