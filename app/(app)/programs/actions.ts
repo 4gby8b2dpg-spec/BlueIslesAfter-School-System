@@ -45,6 +45,136 @@ export async function createProgram(formData: FormData) {
   if (created?.id) redirect(`/programs/${created.id}`);
 }
 
+// Clone a program (FR-C.6): copies the program, its activities, and — shifted
+// to a new start date — its session schedule, so next term is one click away.
+export async function cloneProgram(formData: FormData) {
+  const ctx = await requireAppContext();
+  if (!["admin", "director"].includes(ctx.role)) return;
+
+  const sourceId = String(formData.get("programId") ?? "");
+  if (!sourceId) return;
+  const copySessions = String(formData.get("copySessions") ?? "") === "on";
+  const newStart = String(formData.get("newStart") ?? ""); // yyyy-mm-dd, optional
+  const termId = String(formData.get("termId") ?? "") || null;
+
+  const supabase = await createClient();
+
+  const { data: src } = await supabase
+    .from("programs")
+    .select(
+      "name, category, site_id, term_id, capacity, grade_min, grade_max, ratio_target, funding_source, description_goals",
+    )
+    .eq("id", sourceId)
+    .eq("org_id", ctx.orgId)
+    .maybeSingle();
+  if (!src) return;
+
+  const name = String(formData.get("name") ?? "").trim() || `${src.name} (copy)`;
+
+  // 1) the program — a fresh clone starts in planning and closed to registration.
+  const { data: newProg } = await supabase
+    .from("programs")
+    .insert({
+      org_id: ctx.orgId,
+      name,
+      category: src.category,
+      site_id: src.site_id,
+      term_id: termId ?? src.term_id,
+      capacity: src.capacity,
+      grade_min: src.grade_min,
+      grade_max: src.grade_max,
+      ratio_target: src.ratio_target,
+      funding_source: src.funding_source,
+      description_goals: src.description_goals,
+      status: "planning",
+      accepting_registrations: false,
+    })
+    .select("id")
+    .single();
+  if (!newProg) return;
+
+  // 2) activities — keep a map so sessions can point at the copies.
+  const actMap = new Map<string, string>();
+  const { data: acts } = await supabase
+    .from("activities")
+    .select("id, name, default_duration_min, default_room, materials")
+    .eq("org_id", ctx.orgId)
+    .eq("program_id", sourceId);
+  for (const a of acts ?? []) {
+    const { data: newAct } = await supabase
+      .from("activities")
+      .insert({
+        org_id: ctx.orgId,
+        program_id: newProg.id,
+        name: a.name,
+        default_duration_min: a.default_duration_min,
+        default_room: a.default_room,
+        materials: a.materials,
+      })
+      .select("id")
+      .single();
+    if (newAct) actMap.set(a.id as string, newAct.id as string);
+  }
+
+  // 3) sessions — shifted so the earliest lands on newStart (whole-day shift,
+  // preserving time-of-day and the spacing between sessions).
+  let sessionCount = 0;
+  if (copySessions) {
+    const { data: sess } = await supabase
+      .from("sessions")
+      .select("activity_id, starts_at, ends_at, room, recurrence_id")
+      .eq("org_id", ctx.orgId)
+      .eq("program_id", sourceId)
+      .order("starts_at", { ascending: true });
+
+    if (sess && sess.length) {
+      let deltaMs = 0;
+      if (newStart) {
+        const earliestMidnight = new Date(`${(sess[0].starts_at as string).slice(0, 10)}T00:00:00Z`).getTime();
+        const targetMidnight = new Date(`${newStart}T00:00:00Z`).getTime();
+        deltaMs = targetMidnight - earliestMidnight;
+      }
+      // New recurrence_id per source series, so grouping survives the copy.
+      const recMap = new Map<string, string>();
+      const rows = sess.map((s) => {
+        const oldRec = s.recurrence_id as string | null;
+        let newRec: string | null = null;
+        if (oldRec) {
+          newRec = recMap.get(oldRec) ?? crypto.randomUUID();
+          recMap.set(oldRec, newRec);
+        }
+        const oldAct = s.activity_id as string | null;
+        return {
+          org_id: ctx.orgId,
+          program_id: newProg.id,
+          activity_id: oldAct ? actMap.get(oldAct) ?? null : null,
+          starts_at: new Date(new Date(s.starts_at as string).getTime() + deltaMs).toISOString(),
+          ends_at: new Date(new Date(s.ends_at as string).getTime() + deltaMs).toISOString(),
+          room: s.room,
+          recurrence_id: newRec,
+          status: "scheduled",
+        };
+      });
+      const { data: inserted } = await supabase.from("sessions").insert(rows).select("id");
+      sessionCount = inserted?.length ?? 0;
+    }
+  }
+
+  await supabase.from("audit_log").insert({
+    org_id: ctx.orgId,
+    actor_id: ctx.userId,
+    action: "clone",
+    entity_table: "programs",
+    entity_id: newProg.id,
+    before: { cloned_from: sourceId },
+    after: { name, activities: actMap.size, sessions: sessionCount },
+  });
+
+  revalidatePath("/programs");
+  revalidatePath("/dashboard");
+  redirect(`/programs/${newProg.id}`);
+}
+
 export async function deleteProgram(formData: FormData) {
   const ctx = await requireAppContext();
   if (!["admin", "director"].includes(ctx.role)) return;
