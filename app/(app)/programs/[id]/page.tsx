@@ -8,7 +8,7 @@ import { enrollParticipant } from "../../participants/actions";
 import { AddParticipantForm } from "@/components/add-participant-form";
 import { EditCapacityForm } from "@/components/edit-capacity-form";
 import { Sparkline } from "@/components/sparkline";
-import { promoteFromWaitlist, updateProgramCapacity, setAcceptingRegistrations } from "../actions";
+import { promoteFromWaitlist, updateProgramCapacity, setAcceptingRegistrations, cloneProgram } from "../actions";
 import "../programs.css";
 import { CardIcon } from "@/components/card-icon";
 
@@ -34,7 +34,7 @@ export default async function ProgramDetail({
   const site = program.sites as unknown as { name: string } | null;
   const term = program.terms as unknown as { name: string } | null;
 
-  const [enrollRes, sessionsRes, participantsRes] = await Promise.all([
+  const [enrollRes, sessionsRes, participantsRes, termsRes] = await Promise.all([
     supabase
       .from("enrollments")
       .select("id, status, waitlist_position, participants(id, first_name, last_name, grade)")
@@ -52,7 +52,9 @@ export default async function ProgramDetail({
       .eq("org_id", ctx.orgId)
       .is("deleted_at", null)
       .order("last_name"),
+    supabase.from("terms").select("id, name").eq("org_id", ctx.orgId).order("name"),
   ]);
+  const terms = (termsRes.data ?? []) as { id: string; name: string }[];
 
   const enrollments = (enrollRes.data ?? []) as unknown as {
     id: string;
@@ -205,6 +207,40 @@ export default async function ProgramDetail({
                 {program.accepting_registrations ? "Stop taking registrations" : "Open for registration"}
               </button>
             </form>
+          )}
+          {canDelete && (
+            <details className="clone-wrap">
+              <summary className="reg-toggle-btn">Clone program</summary>
+              <form action={cloneProgram} className="clone-form">
+                <input type="hidden" name="programId" value={program.id} />
+                <label className="clone-field">
+                  <span>New program name</span>
+                  <input name="name" defaultValue={`${program.name} (copy)`} required />
+                </label>
+                <label className="clone-field">
+                  <span>Term</span>
+                  <select name="termId" defaultValue="">
+                    <option value="">Same as original</option>
+                    {terms.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="clone-field">
+                  <span>Shift schedule to start on</span>
+                  <input type="date" name="newStart" />
+                </label>
+                <label className="clone-check">
+                  <input type="checkbox" name="copySessions" defaultChecked />
+                  <span>Copy the session schedule</span>
+                </label>
+                <p className="clone-hint">
+                  Activities are always copied. Sessions shift by whole days so the earliest lands on
+                  your chosen date; leave the date empty to copy dates unchanged.
+                </p>
+                <button className="btn-primary" type="submit">Create clone</button>
+              </form>
+            </details>
           )}
         </div>
       </section>
