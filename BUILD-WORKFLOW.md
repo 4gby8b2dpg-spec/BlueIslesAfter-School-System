@@ -117,6 +117,10 @@ Each row = one committed step. Times are build order on 2026-07-16.
 
 | 36 | Jul 20 | **QA sweep** — full tsc + eslint + production build; code review fixed a kiosk lost-update, sparkline gap rendering, and audit-on-failure | `kiosk-checkin.tsx`, `sparkline.tsx`, `settings/actions.ts` (`92d0981`) |
 
+| 37 | Aug 10 | **Public parent registration (pt.1)** — accountless `/register/[token]` flow; parents submit child + guardian + program choice into a pending queue via anon SECURITY DEFINER RPCs; honeypot, data-minimised; org link create/copy/revoke in Settings + per-program "accepting registrations" toggle | `0011_public_registration.sql` (applied), `app/register/[token]/`, `registration-form.tsx`, `settings/actions.ts`, `programs/actions.ts` (`08129cd`, #20) |
+
+| 38 | Aug 10 | **Registration review queue (pt.2)** — staff `/registrations` screen; Approve creates participant + guardian + link + capacity-aware enrollment (auto-waitlist) under the reviewer's own RLS session, Reject with reason, possible-duplicate flag, audit trail | `0012_registration_review.sql` (⚠ pending apply), `app/(app)/registrations/`, `nav.ts`, `nav-icons.tsx` (`de6fd8f`, #21) |
+
 **Phase 2 backlog complete.** Remaining setup: add `RESEND_API_KEY` to enable
 actual sending — everything else is verified end-to-end.
 
