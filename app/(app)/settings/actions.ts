@@ -263,3 +263,52 @@ export async function revokeCalendarFeed(formData: FormData) {
   await logAudit(supabase, ctx.orgId, ctx.userId, "revoke", "calendar_feeds", feedId, null, null);
   revalidatePath("/settings");
 }
+
+// ---------------------------------------------------------------------
+// Public registration links (0011). Like calendar feeds, the URL carries a
+// secret token; creating/revoking is an admin action and is audited.
+// ---------------------------------------------------------------------
+export async function createRegistrationLink(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+
+  const label = String(formData.get("label") ?? "").trim() || "Registration";
+  const token = newFeedToken();
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("registration_links")
+    .insert({ org_id: ctx.orgId, label, token, created_by: ctx.userId })
+    .select("id")
+    .maybeSingle();
+  if (error) return;
+
+  await logAudit(
+    supabase,
+    ctx.orgId,
+    ctx.userId,
+    "create",
+    "registration_links",
+    data?.id ?? null,
+    null,
+    { label },
+  );
+  revalidatePath("/settings");
+}
+
+export async function revokeRegistrationLink(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  const linkId = String(formData.get("linkId") ?? "").trim();
+  if (!linkId) return;
+
+  const supabase = await createClient();
+  await supabase
+    .from("registration_links")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("id", linkId)
+    .eq("org_id", ctx.orgId);
+
+  await logAudit(supabase, ctx.orgId, ctx.userId, "revoke", "registration_links", linkId, null, null);
+  revalidatePath("/settings");
+}

@@ -157,3 +157,21 @@ export async function updateProgramCapacity(formData: FormData) {
   revalidatePath(`/programs/${programId}`);
   revalidatePath("/dashboard");
 }
+
+// Toggle whether a program appears on the public parent-registration form (0011).
+export async function setAcceptingRegistrations(formData: FormData) {
+  const ctx = await requireAppContext();
+  if (!["admin", "director"].includes(ctx.role)) return;
+  const programId = String(formData.get("programId"));
+  if (!programId) return;
+  const accepting = String(formData.get("accepting") ?? "") === "true";
+
+  const supabase = await createClient();
+  await supabase
+    .from("programs")
+    .update({ accepting_registrations: accepting })
+    .eq("id", programId)
+    .eq("org_id", ctx.orgId);
+
+  revalidatePath(`/programs/${programId}`);
+}

@@ -12,6 +12,8 @@ import {
   updateThresholds,
   createCalendarFeed,
   revokeCalendarFeed,
+  createRegistrationLink,
+  revokeRegistrationLink,
 } from "./actions";
 import { CopyField } from "@/components/copy-field";
 import { headers } from "next/headers";
@@ -67,6 +69,14 @@ export default async function SettingsPage() {
     .is("revoked_at", null)
     .order("created_at", { ascending: true });
   const feeds = feedRows ?? [];
+
+  const { data: regRows } = await supabase
+    .from("registration_links")
+    .select("id, label, token")
+    .eq("org_id", ctx.orgId)
+    .is("revoked_at", null)
+    .order("created_at", { ascending: true });
+  const regLinks = regRows ?? [];
 
   // Feed URLs must be absolute — they're pasted into external calendar apps.
   const h = await headers();
@@ -356,6 +366,50 @@ export default async function SettingsPage() {
           </form>
         </section>
       </div>
+
+      {/* PUBLIC REGISTRATION */}
+      <section className="card">
+        <div className="card-head">
+          <div className="card-title">
+            <span className="spot violet"><CardIcon name="user" /></span>
+            <h2>Parent registration</h2>
+          </div>
+          <span className="card-sub">A public link for families to register</span>
+        </div>
+        <ul className="feed-list">
+          {regLinks.map((l) => (
+            <li key={l.id} className="feed-row">
+              <span className="feed-meta">
+                <span className="feed-label">{l.label}</span>
+                <span className="feed-scope">Public registration form</span>
+              </span>
+              <CopyField value={`${baseUrl}/register/${l.token}`} label={`${l.label} link`} />
+              <form action={revokeRegistrationLink}>
+                <input type="hidden" name="linkId" value={l.id} />
+                <button className="link-btn danger" type="submit">
+                  Revoke
+                </button>
+              </form>
+            </li>
+          ))}
+          {regLinks.length === 0 && (
+            <li className="empty">
+              No registration link yet. Create one to let families register online.
+            </li>
+          )}
+        </ul>
+        <form action={createRegistrationLink} className="inline-add">
+          <input name="label" placeholder="e.g. Fall 2026 registration" />
+          <button className="btn-primary" type="submit">
+            Create link
+          </button>
+        </form>
+        <p className="settings-note">
+          Anyone with this link can submit a registration. Submissions land in a review
+          queue — no one is enrolled until staff approve them. Only programs you mark
+          &ldquo;accepting registrations&rdquo; appear on the form.
+        </p>
+      </section>
 
       {/* CALENDAR FEEDS */}
       <section className="card">

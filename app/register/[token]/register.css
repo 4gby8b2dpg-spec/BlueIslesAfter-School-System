@@ -1,0 +1,195 @@
+/* Public registration form — self-contained (this route is outside the app shell). */
+.rg-wrap {
+  min-height: 100dvh;
+  padding: 32px 20px 60px;
+  background:
+    radial-gradient(120% 120% at 88% -10%, #0f5a5a 0%, transparent 55%),
+    linear-gradient(160deg, #0b3a4a 0%, #072a36 100%);
+  font-family: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+.rg-card {
+  width: 100%;
+  max-width: 620px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(7, 42, 54, 0.35);
+  padding: 32px 30px;
+  color: #14201f;
+}
+.rg-brand {
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 560;
+  font-size: 17px;
+  color: #0b6e66;
+  margin-bottom: 14px;
+}
+.rg-card h1 {
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 560;
+  font-size: 26px;
+  margin: 0;
+  line-height: 1.15;
+}
+.rg-desc {
+  color: #47595a;
+  font-size: 15px;
+  margin: 10px 0 0;
+}
+
+.rg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-top: 24px;
+}
+.rg-fieldset {
+  border: 1px solid #e0e8e6;
+  border-radius: 12px;
+  padding: 18px 16px 16px;
+  margin: 0;
+}
+.rg-fieldset legend {
+  font-family: Fraunces, Georgia, serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0b6e66;
+  padding: 0 8px;
+}
+.rg-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.rg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #47595a;
+  min-width: 0;
+}
+.rg-field.rg-wide {
+  grid-column: 1 / -1;
+}
+.rg-field input,
+.rg-field select,
+.rg-field textarea {
+  font: inherit;
+  font-weight: 400;
+  font-size: 15px;
+  color: #14201f;
+  padding: 10px 12px;
+  border: 1px solid #cfdad8;
+  border-radius: 9px;
+  background: #fff;
+  width: 100%;
+}
+.rg-field input:focus,
+.rg-field select:focus,
+.rg-field textarea:focus {
+  outline: 2px solid #0d9488;
+  outline-offset: 1px;
+  border-color: #0d9488;
+}
+.rg-field textarea {
+  resize: vertical;
+}
+.rg-note {
+  color: #47595a;
+  font-size: 14px;
+  margin: 0 0 12px;
+}
+.rg-check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  font-size: 14px;
+  color: #14201f;
+}
+.rg-check-row input {
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: #0d9488;
+}
+
+/* honeypot — kept in the DOM for bots, hidden from people + assistive tech */
+.rg-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.rg-error {
+  color: #b3261e;
+  background: #fbebea;
+  border-radius: 9px;
+  padding: 11px 13px;
+  font-size: 14px;
+  margin: 0;
+}
+.rg-submit {
+  font: inherit;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 13px 20px;
+  border-radius: 11px;
+  border: 0;
+  background: linear-gradient(150deg, #13a99a, #0b6e66);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(11, 110, 102, 0.28);
+}
+.rg-submit:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.rg-submit:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.rg-done {
+  text-align: center;
+  padding: 20px 0 8px;
+}
+.rg-check {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 999px;
+  background: #e7f2ea;
+  color: #2e7d45;
+  font-size: 28px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.rg-done h2 {
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 560;
+  margin: 0 0 8px;
+}
+.rg-done p {
+  color: #47595a;
+  margin: 0;
+}
+.rg-unavailable {
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .rg-grid {
+    grid-template-columns: 1fr;
+  }
+  .rg-card {
+    padding: 24px 20px;
+  }
+}

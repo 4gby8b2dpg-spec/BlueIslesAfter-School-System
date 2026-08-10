@@ -489,3 +489,29 @@
   color: var(--faint);
   margin-top: 4px;
 }
+
+/* public-registration toggle (0011) */
+.prog-reg-chip {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--good);
+  background: var(--good-bg);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.reg-toggle-btn {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent-ink);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 13px;
+  cursor: pointer;
+}
+.reg-toggle-btn:hover {
+  border-color: var(--accent);
+}
