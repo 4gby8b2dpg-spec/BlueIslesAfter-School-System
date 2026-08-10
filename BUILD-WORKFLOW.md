@@ -115,6 +115,8 @@ Each row = one committed step. Times are build order on 2026-07-16.
 | 34 | Jul 20 | **FR-E.5 complete** — staff-scoped feeds (own assigned sessions); extracted `buildReport` so cron + screen share one implementation | `0008_staff_calendar_feeds.sql` (applied), `lib/reports.ts` (`ea2fdfe`) |
 | 35 | Jul 20 | **FR-H.4** — Scheduled report delivery: weekly/monthly email with Excel attachment, DST-safe due-logic, delivery log, "Send now" | `0009` + `0010` (applied), `lib/report-scheduler.ts`, `lib/mailer.ts`, `netlify/functions/send-reports.mts` (`17ab3b9`) |
 
+| 36 | Jul 20 | **QA sweep** — full tsc + eslint + production build; code review fixed a kiosk lost-update, sparkline gap rendering, and audit-on-failure | `kiosk-checkin.tsx`, `sparkline.tsx`, `settings/actions.ts` (`92d0981`) |
+
 **Phase 2 backlog complete.** Remaining setup: add `RESEND_API_KEY` to enable
 actual sending — everything else is verified end-to-end.
 
