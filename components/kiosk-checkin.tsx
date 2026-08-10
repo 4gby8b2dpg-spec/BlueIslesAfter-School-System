@@ -76,11 +76,28 @@ export function KioskCheckin({
   );
 
   const flush = useCallback(async () => {
-    const ids = [...dirtyRef.current];
-    const records = ids
-      .filter((id) => marksRef.current[id])
-      .map((id) => ({ participantId: id, status: marksRef.current[id] }));
-    if (records.length === 0) return;
+    // Snapshot the value being sent per id. On success we only clear ids whose
+    // mark is unchanged since this snapshot, so a re-tap that lands while the
+    // request is in flight stays queued instead of being lost.
+    const snapshot = [...dirtyRef.current].map(
+      (id) => [id, marksRef.current[id]] as const,
+    );
+    const records = snapshot
+      .filter(([, status]) => status)
+      .map(([id, status]) => ({ participantId: id, status }));
+    if (records.length === 0) {
+      // only cleared marks were queued — drop them so the queue drains
+      const cleared = snapshot.filter(([, s]) => !s).map(([id]) => id);
+      if (cleared.length) {
+        setDirty((prev) => {
+          const next = new Set(prev);
+          for (const id of cleared) if (marksRef.current[id] == null) next.delete(id);
+          persistDirty(next);
+          return next;
+        });
+      }
+      return;
+    }
 
     setSyncing(true);
     try {
@@ -93,7 +110,10 @@ export function KioskCheckin({
       if (res.ok && json.ok) {
         setDirty((prev) => {
           const next = new Set(prev);
-          for (const id of ids) next.delete(id);
+          for (const [id, sentStatus] of snapshot) {
+            // leave ids that changed while the request was in flight
+            if (marksRef.current[id] === sentStatus) next.delete(id);
+          }
           persistDirty(next);
           return next;
         });
@@ -121,12 +141,24 @@ export function KioskCheckin({
   // during SSR), then we overlay anything queued from a previous visit.
   useEffect(() => {
     queueMicrotask(() => {
+      let nextMarks = marksRef.current;
+      let nextDirty = dirtyRef.current;
       try {
         const storedMarks = localStorage.getItem(MARKS_KEY);
         const storedDirty = localStorage.getItem(DIRTY_KEY);
-        if (storedMarks) setMarks({ ...initial, ...JSON.parse(storedMarks) });
-        if (storedDirty) setDirty(new Set(JSON.parse(storedDirty) as string[]));
+        if (storedMarks) {
+          nextMarks = { ...initial, ...JSON.parse(storedMarks) };
+          setMarks(nextMarks);
+        }
+        if (storedDirty) {
+          nextDirty = new Set(JSON.parse(storedDirty) as string[]);
+          setDirty(nextDirty);
+        }
       } catch {}
+      // Update the refs now so the flush below sees the restored queue rather
+      // than the stale initial state (setState only updates refs post-render).
+      marksRef.current = nextMarks;
+      dirtyRef.current = nextDirty;
       setOnline(navigator.onLine);
       void flush();
     });

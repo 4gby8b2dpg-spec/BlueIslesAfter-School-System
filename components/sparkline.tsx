@@ -30,25 +30,34 @@ export function Sparkline({
   const h = 60;
   const step = w / (points.length - 1);
   const y = (v: number) => h - ((v - min) / (max - min || 1)) * h;
-  const coords = points
-    .map((p, i) => (p == null ? null : `${i * step},${y(p).toFixed(1)}`))
-    .filter(Boolean) as string[];
-  const last = points
-    .map((p, i) => ({ p, i }))
-    .filter((x) => x.p != null)
-    .pop();
+
+  // Split into contiguous runs of real data. A null breaks the run, so a
+  // missing period renders as an actual gap rather than a bridged segment.
+  type Pt = { x: number; y: number };
+  const segments: Pt[][] = [];
+  let run: Pt[] = [];
+  points.forEach((p, i) => {
+    if (p == null) {
+      if (run.length) segments.push(run);
+      run = [];
+    } else {
+      run.push({ x: i * step, y: y(p) });
+    }
+  });
+  if (run.length) segments.push(run);
+
+  const lineFor = (seg: Pt[]) => seg.map((pt) => `${pt.x},${pt.y.toFixed(1)}`).join(" ");
+  const last = segments.at(-1)?.at(-1);
 
   // horizontal guides at quarters of the domain
   const gridYs = grid ? [0, 0.25, 0.5, 0.75, 1].map((f) => h * f) : [];
   const fmt = (v: number) => `${Math.round(v * 10) / 10}${unit}`;
 
-  // Optional soft fill under the line. Built from the drawn points only, so a
-  // gap in the data doesn't drag the shape down to the baseline.
+  // Optional soft fill under each drawn segment, so a gap doesn't drag the
+  // shape down to the baseline and no fill spans a missing period.
   const gradId = `spark-fill-${label.replace(/[^a-z0-9]/gi, "").slice(0, 24)}`;
-  const areaPath =
-    area && coords.length >= 2
-      ? `M${coords[0].split(",")[0]},${h} L${coords.join(" L")} L${coords[coords.length - 1].split(",")[0]},${h} Z`
-      : null;
+  const areaFor = (seg: Pt[]) =>
+    `M${seg[0].x},${h} L${lineFor(seg).split(" ").join(" L")} L${seg[seg.length - 1].x},${h} Z`;
 
   const svg = (
     <svg
@@ -58,7 +67,7 @@ export function Sparkline({
       role="img"
       aria-label={label}
     >
-      {areaPath && (
+      {area && (
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#0D9488" stopOpacity="0.22" />
@@ -77,16 +86,27 @@ export function Sparkline({
           vectorEffect="non-scaling-stroke"
         />
       ))}
-      {areaPath && <path d={areaPath} fill={`url(#${gradId})`} />}
-      <polyline
-        points={coords.join(" ")}
-        fill="none"
-        stroke="#0D9488"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {last && last.p != null && <circle cx={last.i * step} cy={y(last.p)} r="3.6" fill="#D97706" />}
+      {area &&
+        segments
+          .filter((seg) => seg.length >= 2)
+          .map((seg, i) => <path key={`a${i}`} d={areaFor(seg)} fill={`url(#${gradId})`} />)}
+      {segments.map((seg, i) =>
+        seg.length >= 2 ? (
+          <polyline
+            key={`l${i}`}
+            points={lineFor(seg)}
+            fill="none"
+            stroke="#0D9488"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ) : (
+          // a lone datapoint between gaps still deserves a mark
+          <circle key={`d${i}`} cx={seg[0].x} cy={seg[0].y} r="2.4" fill="#0D9488" />
+        ),
+      )}
+      {last && <circle cx={last.x} cy={last.y} r="3.6" fill="#D97706" />}
     </svg>
   );
 
