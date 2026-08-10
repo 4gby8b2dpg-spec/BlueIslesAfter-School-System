@@ -158,10 +158,7 @@ export async function deliverSchedule(
   // Only a real scheduled send claims the local day. A failed send leaves the
   // day unclaimed so the next hourly run retries it.
   if (result.ok && trigger === "schedule") {
-    await supabase
-      .from("report_schedules")
-      .update({ last_sent_on: periodFor(s, now).to })
-      .eq("id", s.id);
+    await supabase.from("report_schedules").update({ last_sent_on: to }).eq("id", s.id);
   }
 
   return result;

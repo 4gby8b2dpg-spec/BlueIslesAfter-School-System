@@ -72,11 +72,12 @@ export async function addSite(formData: FormData) {
   if (!name) return;
 
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("sites")
     .insert({ org_id: ctx.orgId, name })
     .select("id")
     .single();
+  if (error) return; // don't audit a creation that didn't happen
   await logAudit(supabase, ctx.orgId, ctx.userId, "create", "sites", data?.id ?? null, null, { name });
 
   revalidatePath("/settings");
@@ -91,11 +92,12 @@ export async function addTerm(formData: FormData) {
   if (!name) return;
 
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("terms")
     .insert({ org_id: ctx.orgId, name, starts_on: startsOn, ends_on: endsOn })
     .select("id")
     .single();
+  if (error) return; // don't audit a creation that didn't happen
   await logAudit(supabase, ctx.orgId, ctx.userId, "create", "terms", data?.id ?? null, null, {
     name,
     starts_on: startsOn,
