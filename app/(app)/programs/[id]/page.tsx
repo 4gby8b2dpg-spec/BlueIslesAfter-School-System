@@ -8,7 +8,7 @@ import { enrollParticipant } from "../../participants/actions";
 import { AddParticipantForm } from "@/components/add-participant-form";
 import { EditCapacityForm } from "@/components/edit-capacity-form";
 import { Sparkline } from "@/components/sparkline";
-import { promoteFromWaitlist, updateProgramCapacity } from "../actions";
+import { promoteFromWaitlist, updateProgramCapacity, setAcceptingRegistrations } from "../actions";
 import "../programs.css";
 import { CardIcon } from "@/components/card-icon";
 
@@ -25,7 +25,7 @@ export default async function ProgramDetail({
 
   const { data: program } = await supabase
     .from("programs")
-    .select("id, name, category, capacity, status, funding_source, ratio_target, sites(name), terms(name)")
+    .select("id, name, category, capacity, status, funding_source, ratio_target, accepting_registrations, sites(name), terms(name)")
     .eq("org_id", ctx.orgId)
     .eq("id", id)
     .maybeSingle();
@@ -190,6 +190,22 @@ export default async function ProgramDetail({
         </div>
         <div className="profile-chips">
           <span className={`prog-status ${program.status}`}>{program.status}</span>
+          {program.accepting_registrations && (
+            <span className="prog-reg-chip">Accepting registrations</span>
+          )}
+          {canDelete && (
+            <form action={setAcceptingRegistrations}>
+              <input type="hidden" name="programId" value={program.id} />
+              <input
+                type="hidden"
+                name="accepting"
+                value={program.accepting_registrations ? "false" : "true"}
+              />
+              <button className="reg-toggle-btn" type="submit">
+                {program.accepting_registrations ? "Stop taking registrations" : "Open for registration"}
+              </button>
+            </form>
+          )}
         </div>
       </section>
 
