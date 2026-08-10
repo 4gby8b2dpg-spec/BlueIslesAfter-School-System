@@ -69,6 +69,59 @@ export async function enrollParticipant(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+const CONTACT_KINDS = ["call", "email", "text", "meeting", "note"];
+
+export async function logContact(formData: FormData) {
+  const ctx = await requireAppContext();
+  if (!["admin", "director", "staff"].includes(ctx.role)) return;
+
+  const participantId = String(formData.get("participantId") ?? "");
+  const kind = String(formData.get("kind") ?? "");
+  const summary = String(formData.get("summary") ?? "").trim().slice(0, 2000);
+  if (!participantId || !CONTACT_KINDS.includes(kind) || !summary) return;
+
+  const guardianId = String(formData.get("guardianId") ?? "") || null;
+  const directionRaw = String(formData.get("direction") ?? "");
+  const direction = directionRaw === "inbound" || directionRaw === "outbound" ? directionRaw : null;
+  const occurredOn = String(formData.get("occurredOn") ?? "") || today();
+
+  const supabase = await createClient();
+
+  // Confirm the participant is in the caller's org before attaching a log to it.
+  const { data: person } = await supabase
+    .from("participants")
+    .select("id")
+    .eq("id", participantId)
+    .eq("org_id", ctx.orgId)
+    .maybeSingle();
+  if (!person) return;
+
+  await supabase.from("contact_log").insert({
+    org_id: ctx.orgId,
+    participant_id: participantId,
+    guardian_id: guardianId,
+    kind,
+    direction,
+    summary,
+    occurred_on: occurredOn,
+    logged_by: ctx.userId,
+  });
+
+  revalidatePath(`/participants/${participantId}`);
+}
+
+export async function deleteContact(formData: FormData) {
+  const ctx = await requireAppContext();
+  if (!["admin", "director"].includes(ctx.role)) return;
+  const id = String(formData.get("id") ?? "");
+  const participantId = String(formData.get("participantId") ?? "");
+  if (!id) return;
+
+  const supabase = await createClient();
+  await supabase.from("contact_log").delete().eq("id", id).eq("org_id", ctx.orgId);
+  revalidatePath(`/participants/${participantId}`);
+}
+
 export async function withdrawEnrollment(formData: FormData) {
   const ctx = await requireAppContext();
   if (!["admin", "director", "staff"].includes(ctx.role)) return;

@@ -445,3 +445,92 @@
 .badge:focus-within .badge-cert {
   opacity: 1;
 }
+
+/* ---------- guardian contact log ---------- */
+.contact-log-card {
+  margin-top: 18px;
+}
+
+.contact-add {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+}
+.contact-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.contact-add select,
+.contact-add input[type="date"],
+.contact-summary {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  background: var(--card);
+  color: var(--ink);
+}
+.contact-summary {
+  flex: 1;
+  min-width: 220px;
+}
+
+.contact-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+.contact-item:last-child {
+  border-bottom: none;
+}
+.contact-kind {
+  flex: none;
+  min-width: 64px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #fff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  margin-top: 2px;
+}
+.kind-call { background: var(--cat-1); }
+.kind-email { background: var(--cat-2); }
+.kind-text { background: var(--cat-5); }
+.kind-meeting { background: var(--cat-4); }
+.kind-note { background: var(--faint); }
+
+.contact-body {
+  flex: 1;
+  min-width: 0;
+}
+.contact-summary-text {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+.contact-meta {
+  margin: 3px 0 0;
+  font-size: 0.78rem;
+  color: var(--faint);
+  text-transform: capitalize;
+}
+.contact-del {
+  flex: none;
+}
