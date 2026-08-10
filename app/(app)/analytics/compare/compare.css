@@ -1,0 +1,56 @@
+/* Cohort comparison — reuses the Explorer's global classes (seg, card,
+   explorer-range, explorer-table) plus these compare-specific bits. */
+
+.cmp-back {
+  margin-top: -4px;
+}
+
+.cmp-back-link {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+.cmp-back-link:hover {
+  color: var(--ink);
+}
+
+.cmp-range {
+  margin-top: 14px;
+}
+
+.cmp-range select {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  background: var(--card);
+  color: var(--ink);
+  min-width: 160px;
+}
+
+.cmp-table td:first-child {
+  font-weight: 500;
+}
+
+.cmp-up {
+  color: var(--good);
+}
+.cmp-down {
+  color: #b3261e;
+}
+.cmp-flat {
+  color: var(--faint);
+}
+
+.cmp-note {
+  margin-top: 12px;
+  font-size: 0.82rem;
+  color: var(--faint);
+}
+
+.cmp-defs p {
+  margin: 0 0 6px;
+}
+.cmp-defs p:last-child {
+  margin-bottom: 0;
+}

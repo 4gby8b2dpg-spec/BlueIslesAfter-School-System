@@ -280,6 +280,12 @@ export default async function AnalyticsPage({
         Slice a metric by a dimension or track it over time — the numbers behind the dashboard.
       </PageHead>
 
+      <div className="explorer-compare-link">
+        <Link href={`/analytics/compare?from=${from}&to=${to}`} className="btn-ghost">
+          Compare cohorts →
+        </Link>
+      </div>
+
       {/* date range */}
       <form className="explorer-range" method="get">
         <input type="hidden" name="metric" value={metric} />
