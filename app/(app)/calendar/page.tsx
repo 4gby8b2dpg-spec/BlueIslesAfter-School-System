@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
+import { PrintButton } from "@/components/print-button";
 import "./calendar.css";
 
 export const dynamic = "force-dynamic";
@@ -152,7 +153,19 @@ export default async function CalendarPage({
           <button className="btn-primary" type="submit">
             Filter
           </button>
+          <PrintButton label="Print / PDF" />
         </form>
+      </div>
+
+      {/* Print-only heading — the on-screen nav arrows don't belong on paper. */}
+      <div className="cal-print-title" aria-hidden="true">
+        <h1>
+          {MONTHS[month]} {year}
+        </h1>
+        <span>
+          {ctx.orgName}
+          {programFilter ? ` · ${programs.find((p) => p.id === programFilter)?.name ?? ""}` : ""}
+        </span>
       </div>
 
       {catsPresent.length > 0 && (
@@ -210,6 +223,24 @@ export default async function CalendarPage({
                       </span>
                     ))}
                 </div>
+
+                {/* Print-only: every session/event as plain text, nothing truncated. */}
+                <ul className="cal-print-events" aria-hidden="true">
+                  {daySessions.map((s) => (
+                    <li key={s.id}>
+                      <span className="cal-print-dot" style={{ background: catColor(s.programs?.category ?? null) }} />
+                      <span className="cal-print-time">{fmtTime(s.starts_at)}</span> {s.programs?.name ?? "Session"}
+                    </li>
+                  ))}
+                  {dayEvents
+                    .filter((e) => e.event_type !== "closure")
+                    .map((e) => (
+                      <li key={e.id}>
+                        <span className="cal-print-dot event" />
+                        {e.title}
+                      </li>
+                    ))}
+                </ul>
               </div>
             );
           })}

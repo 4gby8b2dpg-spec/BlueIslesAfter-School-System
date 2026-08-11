@@ -210,3 +210,124 @@
     font-size: 21px;
   }
 }
+
+/* print-only elements are hidden on screen */
+.cal-print-title,
+.cal-print-events {
+  display: none;
+}
+
+/* ---------- print / PDF: the fridge calendar ---------- */
+@media print {
+  @page {
+    size: landscape;
+    margin: 12mm;
+  }
+
+  /* strip the app chrome + on-screen controls */
+  .app-sidebar,
+  .app-topbar,
+  .cal-nav,
+  .cal-filter,
+  .cal-foot {
+    display: none !important;
+  }
+  .app-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  .cal-print-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 0 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #000;
+  }
+  .cal-print-title h1 {
+    font-size: 20pt;
+    margin: 0;
+    color: #000;
+  }
+  .cal-print-title span {
+    font-size: 10pt;
+    color: #333;
+  }
+
+  /* legend prints in black on white */
+  .cal-legend {
+    margin: 0 0 6px;
+    color: #000;
+  }
+
+  .cal-card {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  .cal-weekday {
+    color: #000 !important;
+    font-weight: 700;
+  }
+
+  /* solid grid lines; let cells grow to fit all sessions */
+  .cal-cell {
+    border: 1px solid #999 !important;
+    min-height: 96px;
+    background: #fff !important;
+    break-inside: avoid;
+  }
+  .cal-cell.empty {
+    background: #f3f3f3 !important;
+  }
+  .cal-cell.closed {
+    background: #f7f7f7 !important;
+  }
+  .cal-cell.today {
+    background: #fff !important;
+    outline: 2px solid #000;
+    outline-offset: -2px;
+  }
+  .cal-daynum {
+    color: #000 !important;
+  }
+
+  /* swap the screen chips for the complete plain-text list */
+  .cal-events {
+    display: none !important;
+  }
+  .cal-print-events {
+    display: block;
+    list-style: none;
+    margin: 2px 0 0;
+    padding: 0;
+  }
+  .cal-print-events li {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 8pt;
+    line-height: 1.5;
+    color: #000;
+    break-inside: avoid;
+  }
+  .cal-print-time {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+  .cal-print-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex: none;
+    /* keep category colors when the browser is set to print backgrounds */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .cal-print-dot.event {
+    background: #000;
+  }
+}
