@@ -66,14 +66,14 @@ async function enrollFromRegistration(
   );
 }
 
-export async function approveRegistration(formData: FormData) {
-  const ctx = await requireAppContext();
-  if (!["admin", "director", "staff"].includes(ctx.role)) return;
-  const registrationId = String(formData.get("registrationId") ?? "");
-  if (!registrationId) return;
-
-  const supabase = await createClient();
-
+// The full approval for one registration: participant + guardian + enrollment(s)
+// + queue close-out + audit. Returns the enrolled program ids (for revalidation),
+// or null when the row was gone / already handled / blocked.
+async function approveOne(
+  supabase: SupabaseClient,
+  ctx: Ctx,
+  registrationId: string,
+): Promise<string[] | null> {
   // Re-read the row server-side (never trust the form for anything but the id),
   // and only act on a still-pending submission so double-clicks are harmless.
   const { data: reg } = await supabase
@@ -83,7 +83,7 @@ export async function approveRegistration(formData: FormData) {
     .eq("org_id", ctx.orgId)
     .eq("status", "pending")
     .maybeSingle();
-  if (!reg) return;
+  if (!reg) return null;
 
   // 1) the participant
   const { data: participant } = await supabase
@@ -99,7 +99,7 @@ export async function approveRegistration(formData: FormData) {
     })
     .select("id")
     .single();
-  if (!participant) return; // insert blocked (RLS/constraint) — leave row pending
+  if (!participant) return null; // insert blocked (RLS/constraint) — leave row pending
 
   // 2) the guardian + link, when the parent gave enough to identify one
   if (reg.guardian_first || reg.guardian_last || reg.guardian_phone || reg.guardian_email) {
@@ -125,9 +125,16 @@ export async function approveRegistration(formData: FormData) {
     }
   }
 
-  // 3) the enrollment, if they picked a program that still exists
-  if (reg.program_id) {
-    await enrollFromRegistration(supabase, ctx, participant.id, reg.program_id);
+  // 3) the enrollment(s) — program_choices (0014) may carry one per weekday;
+  // older rows have just program_id. Skip anything deleted since submission.
+  const choices = reg.program_choices as { id: string }[] | null;
+  const programIds: string[] = choices?.length
+    ? choices.map((c) => c.id)
+    : reg.program_id
+      ? [reg.program_id as string]
+      : [];
+  for (const programId of programIds) {
+    await enrollFromRegistration(supabase, ctx, participant.id, programId);
   }
 
   // 4) close out the queue row
@@ -153,10 +160,44 @@ export async function approveRegistration(formData: FormData) {
     after: { status: "approved", created_participant_id: participant.id },
   });
 
+  return programIds;
+}
+
+function revalidateAfterApproval(programIds: Iterable<string>) {
   revalidatePath("/registrations");
   revalidatePath("/participants");
-  if (reg.program_id) revalidatePath(`/programs/${reg.program_id}`);
+  for (const id of new Set(programIds)) revalidatePath(`/programs/${id}`);
   revalidatePath("/dashboard");
+}
+
+export async function approveRegistration(formData: FormData) {
+  const ctx = await requireAppContext();
+  if (!["admin", "director", "staff"].includes(ctx.role)) return;
+  const registrationId = String(formData.get("registrationId") ?? "");
+  if (!registrationId) return;
+
+  const supabase = await createClient();
+  const programIds = await approveOne(supabase, ctx, registrationId);
+  revalidateAfterApproval(programIds ?? []);
+}
+
+export async function bulkApproveRegistrations(formData: FormData) {
+  const ctx = await requireAppContext();
+  if (!["admin", "director", "staff"].includes(ctx.role)) return;
+  const ids = formData
+    .getAll("ids")
+    .map(String)
+    .filter(Boolean)
+    .slice(0, 100);
+  if (ids.length === 0) return;
+
+  const supabase = await createClient();
+  const touched: string[] = [];
+  for (const id of ids) {
+    const programIds = await approveOne(supabase, ctx, id);
+    if (programIds) touched.push(...programIds);
+  }
+  revalidateAfterApproval(touched);
 }
 
 export async function rejectRegistration(formData: FormData) {
