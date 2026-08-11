@@ -137,6 +137,8 @@ Each row = one committed step. Times are build order on 2026-07-16.
 
 | 46 | Aug 11 | PNG export for trend charts — dependency-free SVG→canvas download on dashboard / explorer / program detail | `png-export-button.tsx`, `sparkline.tsx` (`88db51d`, #29) |
 
+| 47 | Aug 11 | **Registration UX batch** — parent timetable with one-program-per-day (days derived from scheduled sessions, site tz), multi-program submissions, DOB dropdowns, bulk approve, email-wrap fix, program Rename | `0014_registration_timetable.sql` (applied), `registration-form.tsx`, `registrations/`, `programs/actions.ts` (`81c80cc`, #30) |
+
 **Phase 2 backlog complete.** Remaining setup: add `RESEND_API_KEY` to enable
 actual sending — everything else is verified end-to-end.
 
