@@ -84,6 +84,10 @@ export function Sparkline({
           y1={gy}
           y2={gy}
           vectorEffect="non-scaling-stroke"
+          // Presentation-attribute fallback: CSS wins on screen, but this keeps
+          // the guides visible when the SVG is serialized to PNG (no stylesheet).
+          stroke="#d3ded9"
+          strokeWidth="1"
         />
       ))}
       {area &&

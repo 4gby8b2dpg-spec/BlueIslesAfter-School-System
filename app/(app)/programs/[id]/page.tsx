@@ -8,6 +8,7 @@ import { enrollParticipant } from "../../participants/actions";
 import { AddParticipantForm } from "@/components/add-participant-form";
 import { EditCapacityForm } from "@/components/edit-capacity-form";
 import { Sparkline } from "@/components/sparkline";
+import { PngExportButton } from "@/components/png-export-button";
 import { promoteFromWaitlist, updateProgramCapacity, setAcceptingRegistrations, cloneProgram } from "../actions";
 import "../programs.css";
 import { CardIcon } from "@/components/card-icon";
@@ -298,9 +299,14 @@ export default async function ProgramDetail({
               <span className="spot teal"><CardIcon name="chart" /></span>
               <h2>Attendance trend</h2>
             </div>
-            <span className="card-sub">Last {trend.length} completed sessions</span>
+            <div className="explorer-head-right">
+              <span className="card-sub">Last {trend.length} completed sessions</span>
+              <PngExportButton targetId="prog-trend-chart" filename={`${program.name}-attendance-trend`} />
+            </div>
           </div>
-          <Sparkline points={trend} label="Attendance rate by session" />
+          <div id="prog-trend-chart">
+            <Sparkline points={trend} label="Attendance rate by session" />
+          </div>
           <div className="prog-trend-ends">
             <span>earlier</span>
             <span>latest</span>

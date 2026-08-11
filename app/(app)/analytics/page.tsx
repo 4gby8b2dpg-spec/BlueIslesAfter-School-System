@@ -3,6 +3,7 @@ import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { METRIC_DEFINITIONS, type MetricKey as CanonMetricKey } from "@/lib/metrics";
 import { ExplorerExport } from "@/components/explorer-export";
+import { PngExportButton } from "@/components/png-export-button";
 import { Sparkline } from "@/components/sparkline";
 import { PageHead } from "@/components/page-head";
 
@@ -374,12 +375,19 @@ export default async function AnalyticsPage({
               />
             )}
             {view === "time" && weeks.length > 0 && (
-              <ExplorerExport
-                filename={`explorer-${metric}-weekly-${from}_${to}.xlsx`}
-                sheetName={`${metricDef.label} weekly`}
-                columns={["Week of", metricDef.label]}
-                rows={weeks.map((w) => [w.label, w.display])}
-              />
+              <>
+                <PngExportButton
+                  targetId="explorer-chart"
+                  filename={`explorer-${metric}-weekly-${from}_${to}`}
+                  label="PNG"
+                />
+                <ExplorerExport
+                  filename={`explorer-${metric}-weekly-${from}_${to}.xlsx`}
+                  sheetName={`${metricDef.label} weekly`}
+                  columns={["Week of", metricDef.label]}
+                  rows={weeks.map((w) => [w.label, w.display])}
+                />
+              </>
             )}
           </div>
         </div>
@@ -431,7 +439,7 @@ export default async function AnalyticsPage({
           <p className="empty">Not enough weekly data in this range to chart a trend yet.</p>
         ) : (
           <>
-            <div className="explorer-trend">
+            <div className="explorer-trend" id="explorer-chart">
               <Sparkline
                 points={weekPoints}
                 label={`${metricDef.label} by week`}
