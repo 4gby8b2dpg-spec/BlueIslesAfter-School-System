@@ -121,6 +121,22 @@ Each row = one committed step. Times are build order on 2026-07-16.
 
 | 38 | Aug 10 | **Registration review queue (pt.2)** — staff `/registrations` screen; Approve creates participant + guardian + link + capacity-aware enrollment (auto-waitlist) under the reviewer's own RLS session, Reject with reason, possible-duplicate flag, audit trail | `0012_registration_review.sql` (applied), `app/(app)/registrations/`, `nav.ts`, `nav-icons.tsx` (`de6fd8f`, #21) |
 
+| 39 | Aug 10 | **FR-G.4** — Cohort comparison: side-by-side program/site/grade metrics at `/analytics/compare` (read-only) | `analytics/compare/` (`9b07029`, #22) |
+
+| 40 | Aug 10 | **FR-A.6** — Import history + hardened rollback: enriched history, confirm guard, audit-log entry (kept hard-delete) | `import/` (`7530b98`, #23) |
+
+| 41 | Aug 10 | **FR-B.5** — Guardian communication log: contact-log timeline on the participant profile | `0013_contact_log.sql` (applied), `participants/[id]/` (`5a2cb73`, #24) |
+
+| 42 | Aug 10 | **FR-C.6** — Program templates: clone program + activities + schedule shifted to a new start date, planning status | `programs/actions.ts` (`31cc1a2`, #25) |
+
+| 43 | Aug 11 | **FR-B.4** — Waitlist auto-promotion when a seat opens | `programs/`, `participants/actions.ts` (`99cbbfb`, #26) |
+
+| 44 | Aug 11 | **FR-F.5** — Survey templates library | `surveys/` (`e16d97d`, #27) |
+
+| 45 | Aug 11 | **FR-E.4** — Printable month calendar | `calendar/` (`466b32a`, #28) |
+
+| 46 | Aug 11 | PNG export for trend charts — dependency-free SVG→canvas download on dashboard / explorer / program detail | `png-export-button.tsx`, `sparkline.tsx` (`88db51d`, #29) |
+
 **Phase 2 backlog complete.** Remaining setup: add `RESEND_API_KEY` to enable
 actual sending — everything else is verified end-to-end.
 
