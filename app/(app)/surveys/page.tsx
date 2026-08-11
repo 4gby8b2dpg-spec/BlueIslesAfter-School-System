@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
-import { createSurvey } from "./actions";
+import { createSurvey, createSurveyFromTemplate } from "./actions";
 import { NewSurveyForm } from "@/components/new-survey-form";
+import { SURVEY_TEMPLATES } from "@/lib/survey-templates";
 import "./surveys.css";
 import { PageHead } from "@/components/page-head";
 
@@ -34,7 +35,28 @@ export default async function SurveysPage() {
         Build surveys, share a link, and read the results.
       </PageHead>
 
-      {canEdit && <NewSurveyForm action={createSurvey} />}
+      {canEdit && (
+        <div className="survey-start">
+          <NewSurveyForm action={createSurvey} />
+          <details className="tpl-wrap">
+            <summary className="form-trigger">Start from a template</summary>
+            <div className="tpl-grid">
+              {SURVEY_TEMPLATES.map((t) => (
+                <form key={t.key} action={createSurveyFromTemplate} className="tpl-card">
+                  <input type="hidden" name="templateKey" value={t.key} />
+                  <span className="tpl-name">{t.name}</span>
+                  <span className="tpl-desc">{t.description}</span>
+                  <span className="tpl-foot">
+                    <span className="tpl-aud">{t.audience}</span>
+                    <span className="tpl-qn">{t.questions.length} questions</span>
+                  </span>
+                  <button className="btn-primary tpl-use" type="submit">Use template</button>
+                </form>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
 
       {surveys.length === 0 ? (
         <section className="card">
