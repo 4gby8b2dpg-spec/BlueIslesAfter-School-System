@@ -2,6 +2,7 @@
 
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
+import { autoPromoteWaitlist } from "@/lib/enrollment";
 import { revalidatePath } from "next/cache";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -130,10 +131,37 @@ export async function withdrawEnrollment(formData: FormData) {
   if (!enrollmentId) return;
 
   const supabase = await createClient();
+  // Grab the program before withdrawing so we can backfill the seat it frees.
+  const { data: before } = await supabase
+    .from("enrollments")
+    .select("program_id")
+    .eq("id", enrollmentId)
+    .eq("org_id", ctx.orgId)
+    .maybeSingle();
+
   await supabase
     .from("enrollments")
     .update({ status: "withdrawn", withdrawn_on: today() })
-    .eq("id", enrollmentId);
+    .eq("id", enrollmentId)
+    .eq("org_id", ctx.orgId);
+
+  // Auto-promote the next person off the waitlist into the freed seat (FR-B.4).
+  const programId = before?.program_id as string | undefined;
+  if (programId) {
+    const promoted = await autoPromoteWaitlist(supabase, ctx.orgId, programId);
+    for (const pr of promoted) {
+      await supabase.from("audit_log").insert({
+        org_id: ctx.orgId,
+        actor_id: ctx.userId,
+        action: "waitlist_promote",
+        entity_table: "enrollments",
+        entity_id: pr.id,
+        before: { status: "waitlisted", trigger: "withdrawal" },
+        after: { status: "enrolled", name: pr.name },
+      });
+    }
+    revalidatePath(`/programs/${programId}`);
+  }
 
   revalidatePath(`/participants/${participantId}`);
   revalidatePath("/participants");

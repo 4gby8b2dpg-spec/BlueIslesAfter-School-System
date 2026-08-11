@@ -2,6 +2,7 @@
 
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
+import { autoPromoteWaitlist } from "@/lib/enrollment";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -283,6 +284,21 @@ export async function updateProgramCapacity(formData: FormData) {
     .update({ capacity })
     .eq("id", programId)
     .eq("org_id", ctx.orgId);
+
+  // Raising capacity can open seats — fill them from the waitlist.
+  // (Clearing the cap is treated as uncapped and promotes no one here.)
+  const promoted = await autoPromoteWaitlist(supabase, ctx.orgId, programId);
+  for (const pr of promoted) {
+    await supabase.from("audit_log").insert({
+      org_id: ctx.orgId,
+      actor_id: ctx.userId,
+      action: "waitlist_promote",
+      entity_table: "enrollments",
+      entity_id: pr.id,
+      before: { status: "waitlisted", trigger: "capacity_change" },
+      after: { status: "enrolled", name: pr.name },
+    });
+  }
 
   revalidatePath(`/programs/${programId}`);
   revalidatePath("/dashboard");
