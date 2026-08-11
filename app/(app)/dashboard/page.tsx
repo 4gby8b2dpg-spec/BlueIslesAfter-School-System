@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAppContext } from "@/lib/auth-context";
 import { getDashboardData } from "@/lib/dashboard";
 import { Sparkline } from "@/components/sparkline";
+import { PngExportButton } from "@/components/png-export-button";
 
 export const dynamic = "force-dynamic";
 
@@ -178,15 +179,22 @@ export default async function DashboardPage() {
                 </span>
                 <h2>Attendance trend</h2>
               </div>
-              <span className="card-sub">Last 8 weeks</span>
+              <div className="explorer-head-right">
+                <span className="card-sub">Last 8 weeks</span>
+                {points.length >= 2 && (
+                  <PngExportButton targetId="dash-trend-chart" filename="attendance-trend" />
+                )}
+              </div>
             </div>
-            <Sparkline
-              points={d.trend}
-              label="Weekly attendance rate, last 8 weeks"
-              grid
-              unit="%"
-              area
-            />
+            <div id="dash-trend-chart">
+              <Sparkline
+                points={d.trend}
+                label="Weekly attendance rate, last 8 weeks"
+                grid
+                unit="%"
+                area
+              />
+            </div>
           </section>
 
           <section className="card">
