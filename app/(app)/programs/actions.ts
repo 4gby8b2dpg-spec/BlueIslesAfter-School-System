@@ -46,6 +46,45 @@ export async function createProgram(formData: FormData) {
   if (created?.id) redirect(`/programs/${created.id}`);
 }
 
+// Rename in place — handy right after confirming a clone, but available any time.
+export async function renameProgram(formData: FormData) {
+  const ctx = await requireAppContext();
+  if (!["admin", "director"].includes(ctx.role)) return;
+
+  const programId = String(formData.get("programId") ?? "");
+  const name = String(formData.get("name") ?? "").trim().slice(0, 120);
+  if (!programId || !name) return;
+
+  const supabase = await createClient();
+  const { data: before } = await supabase
+    .from("programs")
+    .select("name")
+    .eq("id", programId)
+    .eq("org_id", ctx.orgId)
+    .maybeSingle();
+  if (!before || before.name === name) return;
+
+  await supabase
+    .from("programs")
+    .update({ name })
+    .eq("id", programId)
+    .eq("org_id", ctx.orgId);
+
+  await supabase.from("audit_log").insert({
+    org_id: ctx.orgId,
+    actor_id: ctx.userId,
+    action: "rename",
+    entity_table: "programs",
+    entity_id: programId,
+    before: { name: before.name },
+    after: { name },
+  });
+
+  revalidatePath("/programs");
+  revalidatePath(`/programs/${programId}`);
+  revalidatePath("/dashboard");
+}
+
 // Clone a program (FR-C.6): copies the program, its activities, and — shifted
 // to a new start date — its session schedule, so next term is one click away.
 export async function cloneProgram(formData: FormData) {

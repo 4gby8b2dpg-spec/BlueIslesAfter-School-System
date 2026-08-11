@@ -9,7 +9,7 @@ import { AddParticipantForm } from "@/components/add-participant-form";
 import { EditCapacityForm } from "@/components/edit-capacity-form";
 import { Sparkline } from "@/components/sparkline";
 import { PngExportButton } from "@/components/png-export-button";
-import { promoteFromWaitlist, updateProgramCapacity, setAcceptingRegistrations, cloneProgram } from "../actions";
+import { promoteFromWaitlist, updateProgramCapacity, setAcceptingRegistrations, cloneProgram, renameProgram } from "../actions";
 import "../programs.css";
 import { CardIcon } from "@/components/card-icon";
 
@@ -208,6 +208,19 @@ export default async function ProgramDetail({
                 {program.accepting_registrations ? "Stop taking registrations" : "Open for registration"}
               </button>
             </form>
+          )}
+          {canDelete && (
+            <details className="clone-wrap">
+              <summary className="reg-toggle-btn">Rename</summary>
+              <form action={renameProgram} className="clone-form">
+                <input type="hidden" name="programId" value={program.id} />
+                <label className="clone-field">
+                  <span>Program name</span>
+                  <input name="name" defaultValue={program.name} required maxLength={120} />
+                </label>
+                <button className="btn-primary" type="submit">Save name</button>
+              </form>
+            </details>
           )}
           {canDelete && (
             <details className="clone-wrap">

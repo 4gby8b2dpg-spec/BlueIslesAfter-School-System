@@ -60,10 +60,16 @@
   color: var(--faint);
 }
 
+.reg-details > div {
+  min-width: 0;
+}
+
 .reg-details dd {
   margin: 2px 0 0;
   font-size: 0.9rem;
   color: var(--ink);
+  /* long values (emails especially) wrap instead of bleeding over the card */
+  overflow-wrap: anywhere;
 }
 
 .reg-note {
@@ -74,6 +80,40 @@
   font-size: 0.9rem;
   color: var(--muted);
   font-style: italic;
+}
+
+/* bulk approval bar + per-card select */
+.reg-bulk {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+}
+
+.reg-bulk-hint {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.reg-pick {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.reg-pick input {
+  width: 17px;
+  height: 17px;
+  accent-color: #6d5ef0; /* matches --grad-violet's deep stop */
+  cursor: pointer;
 }
 
 .reg-actions {

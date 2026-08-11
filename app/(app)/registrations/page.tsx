@@ -1,7 +1,7 @@
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { PageHead } from "@/components/page-head";
-import { approveRegistration, rejectRegistration } from "./actions";
+import { approveRegistration, bulkApproveRegistrations, rejectRegistration } from "./actions";
 import "../participants/participants.css";
 import "./registrations.css";
 
@@ -11,6 +11,7 @@ type Registration = {
   id: string;
   program_name: string | null;
   program_id: string | null;
+  program_choices: { id: string; name: string }[] | null;
   child_first: string;
   child_last: string;
   child_dob: string | null;
@@ -42,6 +43,12 @@ function guardianName(r: Registration) {
   return n || "—";
 }
 
+// One row may carry several programs (one per weekday) since 0014.
+function programNames(r: Registration) {
+  if (r.program_choices?.length) return r.program_choices.map((c) => c.name).join(" · ");
+  return r.program_name;
+}
+
 export default async function RegistrationsPage() {
   const ctx = await requireAppContext();
   const supabase = await createClient();
@@ -50,7 +57,7 @@ export default async function RegistrationsPage() {
     supabase
       .from("registrations")
       .select(
-        "id, program_name, program_id, child_first, child_last, child_dob, child_grade, child_school, guardian_first, guardian_last, guardian_phone, guardian_email, guardian_relationship, photo_consent, note, status, reviewed_at, created_at",
+        "id, program_name, program_id, program_choices, child_first, child_last, child_dob, child_grade, child_school, guardian_first, guardian_last, guardian_phone, guardian_email, guardian_relationship, photo_consent, note, status, reviewed_at, created_at",
       )
       .eq("org_id", ctx.orgId)
       .order("created_at", { ascending: false }),
@@ -110,6 +117,16 @@ export default async function RegistrationsPage() {
         </section>
       ) : (
         <div className="reg-queue">
+          {canReview && pending.length > 1 && (
+            <form id="bulk-approve" action={bulkApproveRegistrations} className="reg-bulk">
+              <span className="reg-bulk-hint">
+                Tick “Select” on the cards you’ve checked, then approve them together.
+              </span>
+              <button className="reg-approve" type="submit">
+                Approve selected
+              </button>
+            </form>
+          )}
           {pending.map((r) => (
             <section key={r.id} className="card reg-card">
               <div className="reg-card-head">
@@ -123,10 +140,17 @@ export default async function RegistrationsPage() {
                     )}
                   </h3>
                   <p className="reg-sub">
-                    {r.program_name ? r.program_name : "No program chosen"} · submitted{" "}
-                    {fmtDate(r.created_at)}
+                    {programNames(r) ?? "No program chosen"} · submitted {fmtDate(r.created_at)}
                   </p>
                 </div>
+                {canReview && (
+                  <label className="reg-pick">
+                    {/* lives outside the bulk <form> — linked by id, because the
+                        card's own approve/reject forms can't nest another */}
+                    <input type="checkbox" name="ids" value={r.id} form="bulk-approve" />
+                    <span>Select</span>
+                  </label>
+                )}
               </div>
 
               <dl className="reg-details">
@@ -213,7 +237,7 @@ export default async function RegistrationsPage() {
                   <td>
                     {r.child_first} {r.child_last}
                   </td>
-                  <td>{r.program_name || "—"}</td>
+                  <td>{programNames(r) || "—"}</td>
                   <td>
                     <span className={`reg-status reg-status-${r.status}`}>{r.status}</span>
                   </td>
