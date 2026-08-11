@@ -351,3 +351,60 @@
 .cmp-delta.flat {
   color: var(--muted);
 }
+
+/* ---------- start options + template picker ---------- */
+.survey-start {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.tpl-wrap > summary {
+  list-style: none;
+  cursor: pointer;
+  width: fit-content;
+}
+.tpl-wrap > summary::-webkit-details-marker {
+  display: none;
+}
+.tpl-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.tpl-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.tpl-name {
+  font-weight: 650;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.tpl-desc {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.4;
+  flex: 1;
+}
+.tpl-foot {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.72rem;
+  color: var(--faint);
+  text-transform: capitalize;
+}
+.tpl-qn::before {
+  content: "· ";
+}
+.tpl-use {
+  margin-top: 6px;
+  width: 100%;
+}

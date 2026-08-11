@@ -2,6 +2,7 @@
 
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
+import { getSurveyTemplate } from "@/lib/survey-templates";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -35,6 +36,41 @@ export async function createSurvey(formData: FormData) {
 
   revalidatePath("/surveys");
   if (data?.id) redirect(`/surveys/${data.id}`);
+}
+
+export async function createSurveyFromTemplate(formData: FormData) {
+  const ctx = await requireEditor();
+  if (!ctx) return;
+  const template = getSurveyTemplate(String(formData.get("templateKey") ?? ""));
+  if (!template) return;
+
+  const supabase = await createClient();
+  const { data: survey } = await supabase
+    .from("surveys")
+    .insert({
+      org_id: ctx.orgId,
+      title: template.name,
+      description: template.description,
+      audience: template.audience,
+      status: "draft",
+    })
+    .select("id")
+    .single();
+  if (!survey) return;
+
+  const questions = template.questions.map((q, i) => ({
+    org_id: ctx.orgId,
+    survey_id: survey.id,
+    position: i,
+    prompt: q.prompt,
+    qtype: q.qtype,
+    options: q.options ?? null,
+    required: q.required ?? false,
+  }));
+  await supabase.from("survey_questions").insert(questions);
+
+  revalidatePath("/surveys");
+  redirect(`/surveys/${survey.id}`);
 }
 
 export async function updateSurvey(formData: FormData) {
