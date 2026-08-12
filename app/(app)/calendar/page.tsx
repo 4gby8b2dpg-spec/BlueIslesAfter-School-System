@@ -6,17 +6,7 @@ import "./calendar.css";
 
 export const dynamic = "force-dynamic";
 
-// Categorical palette — deliberately distinct from the brand (teal/marigold)
-// and semantic (good/warn/crit) colors, so a category never reads as a status.
-const CAT_COLOR: Record<string, string> = {
-  tutoring: "#2563EB",
-  STEM: "#7C3AED",
-  sports: "#DB2777",
-  arts: "#C2410C",
-  enrichment: "#0891B2",
-};
-const OTHER_COLOR = "#64748B";
-const catColor = (c: string | null) => (c && CAT_COLOR[c]) || OTHER_COLOR;
+import { catColor } from "@/lib/cat-colors";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -139,6 +129,9 @@ export default async function CalendarPage({
               Today
             </Link>
           )}
+          <Link className="cal-mode-toggle" href="/calendar/plan">
+            Planning mode
+          </Link>
         </div>
         <form method="get" className="cal-filter">
           <input type="hidden" name="month" value={ym(year, month)} />
