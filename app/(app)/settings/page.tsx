@@ -14,10 +14,13 @@ import {
   revokeCalendarFeed,
   createRegistrationLink,
   revokeRegistrationLink,
+  updateRetentionSettings,
+  runRetentionPurge,
 } from "./actions";
 import { CopyField } from "@/components/copy-field";
 import { headers } from "next/headers";
 import { getFlagThresholds } from "@/lib/flags";
+import { getPurgeCandidates } from "@/lib/retention";
 import "./settings.css";
 import { CardIcon } from "@/components/card-icon";
 
@@ -61,6 +64,16 @@ export default async function SettingsPage() {
       .limit(30),
     getFlagThresholds(ctx.orgId),
   ]);
+
+  const { data: retentionRow } = await supabase
+    .from("org_settings")
+    .select("retention_years")
+    .eq("org_id", ctx.orgId)
+    .maybeSingle();
+  const retentionYears = retentionRow?.retention_years ?? null;
+  const purgeCandidates = retentionYears
+    ? await getPurgeCandidates(supabase, ctx.orgId, retentionYears)
+    : [];
 
   const { data: feedRows } = await supabase
     .from("calendar_feeds")
@@ -265,6 +278,79 @@ export default async function SettingsPage() {
             Save thresholds
           </button>
         </form>
+      </section>
+
+      {/* DATA RETENTION & PURGE */}
+      <section className="card">
+        <div className="card-head">
+          <div className="card-title">
+            <span className="spot coral"><CardIcon name="trash" /></span>
+            <h2>Data retention</h2>
+          </div>
+          <span className="card-sub">Permanent — admin only</span>
+        </div>
+        <form action={updateRetentionSettings} className="threshold-form">
+          <label>
+            <span>Purge participants withdrawn for</span>
+            <div className="threshold-input">
+              <input
+                type="number"
+                name="retentionYears"
+                min={1}
+                max={50}
+                placeholder="off"
+                defaultValue={retentionYears ?? ""}
+              />
+              <em>years</em>
+            </div>
+          </label>
+          <p className="threshold-note">
+            A participant qualifies once every enrollment they&rsquo;ve ever had is withdrawn or
+            completed (none active or waitlisted) and their most recent enrollment activity is
+            older than this window. Leave blank to turn the feature off.
+          </p>
+          <button className="btn-primary" type="submit">
+            Save retention window
+          </button>
+        </form>
+
+        {retentionYears && (
+          <div className="purge-preview">
+            {purgeCandidates.length === 0 ? (
+              <p className="empty">No participants currently eligible for purge.</p>
+            ) : (
+              <>
+                <p className="settings-note" style={{ margin: "0 0 8px" }}>
+                  <strong>{purgeCandidates.length}</strong> participant
+                  {purgeCandidates.length === 1 ? "" : "s"} eligible for purge:
+                </p>
+                <ul className="purge-list">
+                  {purgeCandidates.slice(0, 15).map((c) => (
+                    <li key={c.id}>
+                      {c.name} <span className="in-use">since {c.lastActivityOn}</span>
+                    </li>
+                  ))}
+                  {purgeCandidates.length > 15 && (
+                    <li className="in-use">+{purgeCandidates.length - 15} more</li>
+                  )}
+                </ul>
+                <form action={runRetentionPurge} className="purge-confirm">
+                  <input type="text" name="confirmText" placeholder="Type PURGE to confirm" required />
+                  <label className="purge-check">
+                    <input type="checkbox" name="confirmCheck" required />
+                    <span>
+                      I understand this permanently deletes these {purgeCandidates.length}{" "}
+                      participants and all their records — this cannot be undone.
+                    </span>
+                  </label>
+                  <button className="btn-danger" type="submit">
+                    Purge now
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        )}
       </section>
 
       {/* SITES + TERMS */}

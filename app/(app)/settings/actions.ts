@@ -2,6 +2,8 @@
 
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getPurgeCandidates } from "@/lib/retention";
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -198,6 +200,74 @@ export async function updateThresholds(formData: FormData) {
 
   revalidatePath("/settings");
   revalidatePath("/dashboard");
+}
+
+// ---------------------------------------------------------------------
+// Data retention & purge (0016, FR-I.4). Purging is destructive, so
+// runRetentionPurge requires two independent confirmations from the form
+// (a typed "PURGE" and a checked acknowledgement) and always recomputes
+// eligibility server-side rather than trusting a client-submitted id list.
+// The delete itself runs on the service-role client, bypassing RLS — the
+// pattern 0015's audit_log migration comment explicitly calls out for
+// retention/erasure requests.
+// ---------------------------------------------------------------------
+export async function updateRetentionSettings(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+
+  const raw = String(formData.get("retentionYears") ?? "").trim();
+  const retentionYears = raw ? clampInt(raw, 1, 50, 7) : null;
+
+  const supabase = await createClient();
+  const { data: before } = await supabase
+    .from("org_settings")
+    .select("retention_years")
+    .eq("org_id", ctx.orgId)
+    .maybeSingle();
+
+  await supabase
+    .from("org_settings")
+    .upsert({ org_id: ctx.orgId, retention_years: retentionYears }, { onConflict: "org_id" });
+  await logAudit(supabase, ctx.orgId, ctx.userId, "update", "org_settings", ctx.orgId, before, {
+    retention_years: retentionYears,
+  });
+
+  revalidatePath("/settings");
+}
+
+export async function runRetentionPurge(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+
+  const confirmText = String(formData.get("confirmText") ?? "").trim();
+  const confirmCheck = String(formData.get("confirmCheck") ?? "");
+  if (confirmText !== "PURGE" || confirmCheck !== "on") return;
+
+  const supabase = await createClient();
+  const { data: settings } = await supabase
+    .from("org_settings")
+    .select("retention_years")
+    .eq("org_id", ctx.orgId)
+    .maybeSingle();
+  const retentionYears = settings?.retention_years;
+  if (!retentionYears) return;
+
+  const candidates = await getPurgeCandidates(supabase, ctx.orgId, retentionYears);
+  if (candidates.length === 0) return;
+
+  const ids = candidates.map((c) => c.id);
+  const admin = createAdminClient();
+  await admin.from("participants").delete().in("id", ids).eq("org_id", ctx.orgId);
+
+  await logAudit(supabase, ctx.orgId, ctx.userId, "purge", "participants", null, {
+    count: candidates.length,
+    names: candidates.map((c) => c.name),
+  }, { retention_years: retentionYears });
+
+  revalidatePath("/settings");
+  revalidatePath("/participants");
+  revalidatePath("/dashboard");
+  revalidatePath("/analytics");
 }
 
 // ---------------------------------------------------------------------
