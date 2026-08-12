@@ -139,6 +139,8 @@ Each row = one committed step. Times are build order on 2026-07-16.
 
 | 47 | Aug 11 | **Registration UX batch** — parent timetable with one-program-per-day (days derived from scheduled sessions, site tz), multi-program submissions, DOB dropdowns, bulk approve, email-wrap fix, program Rename | `0014_registration_timetable.sql` (applied), `registration-form.tsx`, `registrations/`, `programs/actions.ts` (`81c80cc`, #30) |
 
+| 48 | Aug 12 | **Security pass** — headers (CSP report-only, XFO, referrer, permissions), next 16.2.10→16.3.0, xlsx→0.20.3 via SheetJS CDN (npm audit now 0), Dependabot, security CI (gitleaks/npm-audit/semgrep/key-containment), RLS isolation test (skips until staging secrets), audit_log append-only | `next.config.ts`, `.github/`, `scripts/rls-isolation-test.mjs`, `0015_audit_log_append_only.sql` (applied) (`27728fc`, #31) |
+
 **Phase 2 backlog complete.** Remaining setup: add `RESEND_API_KEY` to enable
 actual sending — everything else is verified end-to-end.
 
