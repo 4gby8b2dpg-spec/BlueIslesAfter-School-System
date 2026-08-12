@@ -226,6 +226,67 @@
   justify-self: start;
 }
 
+/* data retention & purge (FR-I.4) */
+.purge-preview {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.purge-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13.5px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.purge-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--crit);
+  border-radius: 12px;
+  background: var(--warn-bg);
+}
+.purge-confirm input[type="text"] {
+  font: inherit;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
+  max-width: 260px;
+}
+.purge-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.purge-check input {
+  margin-top: 3px;
+}
+.btn-danger {
+  align-self: start;
+  font: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--crit);
+  color: #fff;
+  cursor: pointer;
+}
+.btn-danger:hover {
+  filter: brightness(0.93);
+}
+
 /* calendar feeds (FR-E.5) */
 .feed-list {
   list-style: none;
