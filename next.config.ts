@@ -32,6 +32,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // 16.3 auto-generates AGENTS.md/CLAUDE.md; a generated CLAUDE.md would be
+  // silently loaded as agent instructions on every session — keep those files
+  // deliberate, not generated.
+  agentRules: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
