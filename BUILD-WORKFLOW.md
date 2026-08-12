@@ -141,8 +141,15 @@ Each row = one committed step. Times are build order on 2026-07-16.
 
 | 48 | Aug 12 | **Security pass** — headers (CSP report-only, XFO, referrer, permissions), next 16.2.10→16.3.0, xlsx→0.20.3 via SheetJS CDN (npm audit now 0), Dependabot, security CI (gitleaks/npm-audit/semgrep/key-containment), RLS isolation test (skips until staging secrets), audit_log append-only | `next.config.ts`, `.github/`, `scripts/rls-isolation-test.mjs`, `0015_audit_log_append_only.sql` (applied) (`27728fc`, #31) |
 
-**Phase 2 backlog complete.** Remaining setup: add `RESEND_API_KEY` to enable
-actual sending — everything else is verified end-to-end.
+| 49 | Aug 12 | **FR-E.6** — Term planning view: `/calendar/plan`, one row per program × one column per term week under month headers; cells shade by session count, zero weeks read as hatched gaps, 2x-median weeks get an overload ring, violet totals row surfaces org-wide crunch weeks, closure dots on week headers; term dropdown (falls back to rolling 12 weeks), sticky program column, print support; Month↔Planning toggle on both calendar views | `calendar/plan/page.tsx`, `lib/cat-colors.ts` (`ed627a7`, #36) |
+
+| 50 | Aug 12 | **FR-I.4** — Data retention & purge: admin Settings card sets a retention window; a participant qualifies once every enrollment they've ever had is withdrawn/completed (none active/waitlisted) and their most recent enrollment activity predates the window, computed live (no stored queue). Purge requires typed "PURGE" + a checked acknowledgement, recomputes eligibility server-side, deletes via the service-role client, logs one audit_log entry with the count and names | `lib/retention.ts`, `settings/actions.ts`, `0016_retention.sql` (applied) (`10c2254`, #37) |
+
+| 51 | Aug 12 | **FR-H.4** — Narrative builder: `/reports/narratives`, an ordered block composer (text / KPI callout / chart snapshot) for board-deck-style report bodies — no WYSIWYG, no new dependency. KPI/chart blocks are snapshots frozen at add-time from a fixed metric set; charts captured via `lib/svg-to-png.ts` (extracted from `PngExportButton` so both share one implementation); rendered via `renderNarrativeHtml` with a `/preview` route. Manual only — not wired into scheduled email delivery | `reports/narratives/`, `lib/narrative-metrics.ts`, `lib/narratives.ts`, `0017_report_narratives.sql` (applied) (`b18055c`, #38) |
+
+**Blueprint backlog complete.** Setup outstanding: add `RESEND_API_KEY` to
+enable actual scheduled-report sending — everything else is verified
+end-to-end.
 
 ---
 
