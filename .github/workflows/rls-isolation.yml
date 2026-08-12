@@ -1,0 +1,79 @@
+# Live tenant-isolation test. Unlike the static scanners in security.yml this
+# needs a real database, so it runs against STAGING only — never production,
+# because the write checks deliberately attempt inserts and updates.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   STAGING_SUPABASE_URL
+#   STAGING_SUPABASE_ANON_KEY
+#   STAGING_SUPABASE_SERVICE_ROLE_KEY   (optional, but needed for real coverage)
+#   RLS_TEST_ORG_A_EMAIL / RLS_TEST_ORG_A_PASSWORD
+#   RLS_TEST_ORG_B_EMAIL / RLS_TEST_ORG_B_PASSWORD
+#   RLS_TEST_VIEWER_EMAIL / RLS_TEST_VIEWER_PASSWORD  (optional)
+#
+# Until those exist the job skips rather than fails, so it can be merged before
+# staging is stood up.
+name: rls-isolation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - "scripts/rls-isolation-test.mjs"
+      - ".github/workflows/rls-isolation.yml"
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - "scripts/rls-isolation-test.mjs"
+  schedule:
+    # Nightly. Policies can be changed from the Supabase dashboard without any
+    # commit, so a git-triggered run alone would not notice.
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolation:
+    name: Cross-org isolation
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check staging credentials are configured
+        id: creds
+        env:
+          URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          ORG_A: ${{ secrets.RLS_TEST_ORG_A_EMAIL }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$ORG_A" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Staging secrets not set — skipping isolation test."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.creds.outputs.configured == 'true'
+        run: npm ci
+
+      - name: Run cross-org isolation test
+        if: steps.creds.outputs.configured == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+          RLS_TEST_ORG_A_EMAIL: ${{ secrets.RLS_TEST_ORG_A_EMAIL }}
+          RLS_TEST_ORG_A_PASSWORD: ${{ secrets.RLS_TEST_ORG_A_PASSWORD }}
+          RLS_TEST_ORG_B_EMAIL: ${{ secrets.RLS_TEST_ORG_B_EMAIL }}
+          RLS_TEST_ORG_B_PASSWORD: ${{ secrets.RLS_TEST_ORG_B_PASSWORD }}
+          RLS_TEST_VIEWER_EMAIL: ${{ secrets.RLS_TEST_VIEWER_EMAIL }}
+          RLS_TEST_VIEWER_PASSWORD: ${{ secrets.RLS_TEST_VIEWER_PASSWORD }}
+        run: node scripts/rls-isolation-test.mjs

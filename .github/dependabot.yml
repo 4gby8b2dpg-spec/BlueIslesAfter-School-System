@@ -1,0 +1,16 @@
+# Dependabot: weekly npm vulnerability + version checks.
+# Minor/patch bumps arrive grouped in one PR to keep the queue quiet;
+# majors (and any security fix) get their own PR.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"

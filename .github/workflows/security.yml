@@ -1,0 +1,122 @@
+# Static security checks that run without a database or a deployed site.
+# Deliberately non-AI: these are deterministic scanners, so they catch a
+# different class of problem than a code-review agent does.
+#
+# The live-database tenant-isolation test is separate — see rls-isolation.yml.
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Monday 06:00 UTC. Catches newly-published advisories against code that
+    # hasn't changed, which push/PR triggers never would.
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: Leaked secrets (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: a key that was committed and later removed is still
+          # live until it's rotated, and a shallow clone would not see it.
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          VERSION=8.28.0
+          curl -sSfL -o gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo mv gitleaks /usr/local/bin/
+
+      - name: Scan history
+        run: gitleaks detect --source . --redact --verbose --exit-code 1
+
+  dependencies:
+    name: Dependency advisories (npm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Production dependencies only. A vulnerable build-time devDependency is
+      # worth knowing about but should not block a deploy at this stage.
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+  sast:
+    name: Static analysis (semgrep)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:1.145.0
+    steps:
+      - uses: actions/checkout@v4
+
+      # These rulesets are fetched from the public registry and need no account
+      # or token. Findings at ERROR severity fail the job; WARNING ones are
+      # printed for triage but do not block.
+      - name: Run semgrep
+        run: |
+          semgrep scan \
+            --config p/typescript \
+            --config p/react \
+            --config p/nextjs \
+            --config p/secrets \
+            --config p/owasp-top-ten \
+            --severity ERROR \
+            --error \
+            --metrics off \
+            --exclude node_modules \
+            --exclude '*.min.js'
+
+  # Guards the specific mistake that would be worst here: the service-role key
+  # bypasses every RLS policy, so it must never be reachable from code that
+  # runs in a browser or from a route that isn't the scheduled-reports job.
+  service-role-containment:
+    name: Service-role key containment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assert service-role key is only read in lib/supabase/admin.ts
+        run: |
+          ALLOWED="lib/supabase/admin.ts"
+          FOUND=$(grep -rl "SUPABASE_SERVICE_ROLE_KEY" \
+                    --include='*.ts' --include='*.tsx' --include='*.mts' \
+                    app lib components netlify 2>/dev/null || true)
+          UNEXPECTED=$(echo "$FOUND" | grep -v "^${ALLOWED}$" | grep -v '^$' || true)
+          if [ -n "$UNEXPECTED" ]; then
+            echo "::error::Service-role key referenced outside ${ALLOWED}:"
+            echo "$UNEXPECTED"
+            exit 1
+          fi
+          echo "OK — service-role key confined to ${ALLOWED}"
+
+      - name: Assert no service-role or secret key reaches the client bundle
+        run: |
+          # NEXT_PUBLIC_* is inlined into client JS at build time. A secret
+          # behind that prefix is published to every visitor.
+          BAD=$(grep -rnE "NEXT_PUBLIC_[A-Z_]*(SERVICE_ROLE|SECRET|PRIVATE)" \
+                  --include='*.ts' --include='*.tsx' --include='*.mts' \
+                  app lib components netlify 2>/dev/null || true)
+          if [ -n "$BAD" ]; then
+            echo "::error::Secret exposed through a NEXT_PUBLIC_ variable:"
+            echo "$BAD"
+            exit 1
+          fi
+          echo "OK — no secrets behind NEXT_PUBLIC_"
