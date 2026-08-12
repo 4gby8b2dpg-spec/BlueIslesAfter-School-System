@@ -185,7 +185,12 @@ export function NarrativeBuilder({
           ) : (
             <p className="empty">Not enough weekly data in this range to chart.</p>
           )}
-          <button type="button" className="btn-primary" onClick={captureChart}>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={captureChart}
+            disabled={chartPreview.points.length < 2}
+          >
             Capture into narrative
           </button>
         </div>

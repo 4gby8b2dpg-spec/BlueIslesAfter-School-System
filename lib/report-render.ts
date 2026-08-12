@@ -83,9 +83,12 @@ export function renderNarrativeHtml({
           <div style="font-size:12.5px;color:#4a5c5a;margin-top:2px;">${escapeHtml(b.label)}</div>
         </div>`;
       }
-      // chart
+      // chart — dataUrl is attacker-reachable via the saveNarrative server
+      // action (only typeof-checked, not content-checked), so only ever
+      // accept it if it's actually a PNG data URL; escape it regardless.
+      if (!b.dataUrl.startsWith("data:image/png;base64,")) return "";
       return `<figure style="margin:0 0 16px;">
-        <img src="${b.dataUrl}" alt="${escapeHtml(b.label)}" style="max-width:100%;border-radius:10px;border:1px solid #e0e8e6;" />
+        <img src="${escapeHtml(b.dataUrl)}" alt="${escapeHtml(b.label)}" style="max-width:100%;border-radius:10px;border:1px solid #e0e8e6;" />
         <figcaption style="font-size:12px;color:#6a7c7a;margin-top:6px;">${escapeHtml(b.label)}</figcaption>
       </figure>`;
     })

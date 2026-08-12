@@ -257,7 +257,8 @@ export async function runRetentionPurge(formData: FormData) {
 
   const ids = candidates.map((c) => c.id);
   const admin = createAdminClient();
-  await admin.from("participants").delete().in("id", ids).eq("org_id", ctx.orgId);
+  const { error } = await admin.from("participants").delete().in("id", ids).eq("org_id", ctx.orgId);
+  if (error) return; // don't audit a purge that didn't actually happen
 
   await logAudit(supabase, ctx.orgId, ctx.userId, "purge", "participants", null, {
     count: candidates.length,
