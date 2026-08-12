@@ -96,6 +96,12 @@ export default async function ReportsPage({
         Pick a template and date range. Export to Excel, or print to PDF.
       </PageHead>
 
+      <div className="no-print" style={{ margin: "-4px 0 18px" }}>
+        <Link href="/reports/narratives" className="btn-ghost">
+          Narrative reports →
+        </Link>
+      </div>
+
       {/* template gallery */}
       <div className="report-templates no-print">
         {TEMPLATES.map((t) => (
