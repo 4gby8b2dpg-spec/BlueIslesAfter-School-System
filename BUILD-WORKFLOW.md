@@ -151,10 +151,14 @@ Each row = one committed step. Times are build order on 2026-07-16.
 
 | 53 | Aug 13 | **CSP enforced** — flipped `Content-Security-Policy-Report-Only` (shipped in the Aug 12 security pass, #31) to enforcing. Verified quiet first: a source + rendered-HTML audit of every page found nothing outside the existing allowlist (same-origin, `data:`/`blob:` images, `*.supabase.co`); Resend (the one external call) is server-side, not subject to browser CSP. Marlon click-tested the deploy preview across dashboard/participants/calendar/reports/settings with devtools open before merge — no violations | `next.config.ts` (`f2f3ef0`, #40) |
 
-**Blueprint backlog complete; two SaaS-readiness items shipped (self-serve
-signup, CSP enforce).** Setup outstanding: add `RESEND_API_KEY` to enable
-actual scheduled-report sending. Next SaaS milestones (not yet started):
-billing/subscriptions, legal/compliance review, a pilot customer.
+| 54 | Aug 13 | **Marketing CTA wired to real signup** — every primary CTA (nav, hero, cta-band, footer) on the landing page pointed to an in-page `#cta` anchor with no actual signup capture; now links to `/signup`. Copy corrected to match reality now that this is public and live: dropped "join the early-access waitlist" framing, and fixed the footer's "no data is collected" claim (false the moment a real signup form exists) — replaced with an honest placeholder pending an actual privacy policy. Avoided "free" in CTA copy since pricing/billing isn't decided yet. Flagged to Marlon before doing this — wiring a public site to real signup with no privacy policy/ToS yet is a real (accepted) risk, not just a UI change | `app/(marketing)/page.tsx` (`32bde01`, #41) |
+
+**Blueprint backlog complete; three SaaS-readiness items shipped (self-serve
+signup, CSP enforce, marketing wired to real signup).** Setup outstanding:
+add `RESEND_API_KEY` to enable actual scheduled-report sending. Next SaaS
+milestones (not yet started): billing/subscriptions (pricing model undecided
+— paused deliberately), legal/compliance review (privacy policy/ToS now
+overdue given the site is live), a pilot customer.
 
 ---
 
