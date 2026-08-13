@@ -72,7 +72,7 @@ export default function MarketingHome() {
               <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
             </button>
             <a className="btn btn-ghost" href="#how">See how</a>
-            <a className="btn btn-primary" href="#cta">Request early access</a>
+            <a className="btn btn-primary" href="/signup">Get started</a>
           </div>
         </div>
       </header>
@@ -87,7 +87,7 @@ export default function MarketingHome() {
               <h1>Drop your spreadsheets in.<br /><em>Get answers out.</em></h1>
               <p className="lede">Attendance in one file, enrollment in another, surveys in a third. BlueIsles pulls the data you already have into one workspace — then hands you the funder report your board asks for.</p>
               <div className="hero-cta">
-                <a className="btn btn-primary" href="#cta">Request early access</a>
+                <a className="btn btn-primary" href="/signup">Get started</a>
                 <a className="btn btn-onDark" href="#how">Watch the 3-step loop</a>
               </div>
               <div className="hero-trust">
@@ -335,14 +335,14 @@ export default function MarketingHome() {
         <section id="cta" className="cta-band">
           <div className="wrap">
             <div className="cta-card reveal">
-              <span className="eyebrow">Early access</span>
+              <span className="eyebrow">Ready now</span>
               <h2>Get your spreadsheets working for you.</h2>
-              <p>BlueIsles is in active build. Join the early-access list to shape the MVP and be first in when it opens for your program.</p>
+              <p>Create your organization and start importing your data in minutes — no waitlist, no sales call.</p>
               <div className="hero-cta">
-                <a className="btn btn-primary" href="#cta">Request early access</a>
+                <a className="btn btn-primary" href="/signup">Get started</a>
                 <a className="btn btn-ghost" href="#how">See the 3-step loop</a>
               </div>
-              <p className="cta-note">No spam. We'll only email about early access and launch.</p>
+              <p className="cta-note">Free to try while we&rsquo;re in early access.</p>
             </div>
           </div>
         </section>
@@ -365,12 +365,12 @@ export default function MarketingHome() {
               <a href="#how">How it works</a>
               <a href="#modules">What's inside</a>
               <a href="#privacy">Privacy</a>
-              <a href="#cta">Early access</a>
+              <a href="/signup">Get started</a>
             </nav>
           </div>
           <div className="foot-note">
             <span>&ldquo;BlueIsles&rdquo; is a working name — placeholder, to be confirmed.</span>
-            <span>Prototype landing page · illustrative content · no data is collected.</span>
+            <span>Early access · your organization&rsquo;s data stays private to your organization · a full privacy policy is on its way.</span>
           </div>
         </div>
       </footer>
