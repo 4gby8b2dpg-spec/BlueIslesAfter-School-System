@@ -95,3 +95,7 @@
   margin: 4px 0 0;
   text-align: center;
 }
+.login-card a {
+  color: #0d9488;
+  font-weight: 600;
+}
