@@ -147,9 +147,12 @@ Each row = one committed step. Times are build order on 2026-07-16.
 
 | 51 | Aug 12 | **FR-H.4** — Narrative builder: `/reports/narratives`, an ordered block composer (text / KPI callout / chart snapshot) for board-deck-style report bodies — no WYSIWYG, no new dependency. KPI/chart blocks are snapshots frozen at add-time from a fixed metric set; charts captured via `lib/svg-to-png.ts` (extracted from `PngExportButton` so both share one implementation); rendered via `renderNarrativeHtml` with a `/preview` route. Manual only — not wired into scheduled email delivery | `reports/narratives/`, `lib/narrative-metrics.ts`, `lib/narratives.ts`, `0017_report_narratives.sql` (applied) (`b18055c`, #38) |
 
-**Blueprint backlog complete.** Setup outstanding: add `RESEND_API_KEY` to
-enable actual scheduled-report sending — everything else is verified
-end-to-end.
+| 52 | Aug 13 | **Self-serve organization signup** — `/signup` (email + password) → `/auth/callback` (PKCE confirm-email exchange) → `/no-org`, repurposed from a dead end into the org-creation step for users with zero membership rows; a user with an invited-but-inactive row still sees "waiting on your admin." `createOrgForSelf` creates the org + first admin membership via the service-role client (no RLS insert path exists for either on a new user), then audits the creation via the RLS client. First real SaaS onboarding path — previously every org was created by hand in the Supabase dashboard | `app/signup/`, `app/auth/callback/`, `app/no-org/` (`9fe8c70`, #39) |
+
+**Blueprint backlog complete; first self-serve onboarding path shipped.**
+Setup outstanding: add `RESEND_API_KEY` to enable actual scheduled-report
+sending. Next SaaS milestones (not yet started): billing/subscriptions, CSP
+enforce mode, legal/compliance review, a pilot customer.
 
 ---
 
