@@ -46,3 +46,6 @@ next-env.d.ts
 # Deploy artifacts / archives (Netlify CLI leaves a repo zip)
 *.zip
 .netlify/
+
+# Legal/compliance working docs — gap analyses, not for version control
+/legal/
