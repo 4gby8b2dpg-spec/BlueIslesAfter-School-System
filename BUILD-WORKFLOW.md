@@ -149,10 +149,12 @@ Each row = one committed step. Times are build order on 2026-07-16.
 
 | 52 | Aug 13 | **Self-serve organization signup** — `/signup` (email + password) → `/auth/callback` (PKCE confirm-email exchange) → `/no-org`, repurposed from a dead end into the org-creation step for users with zero membership rows; a user with an invited-but-inactive row still sees "waiting on your admin." `createOrgForSelf` creates the org + first admin membership via the service-role client (no RLS insert path exists for either on a new user), then audits the creation via the RLS client. First real SaaS onboarding path — previously every org was created by hand in the Supabase dashboard | `app/signup/`, `app/auth/callback/`, `app/no-org/` (`9fe8c70`, #39) |
 
-**Blueprint backlog complete; first self-serve onboarding path shipped.**
-Setup outstanding: add `RESEND_API_KEY` to enable actual scheduled-report
-sending. Next SaaS milestones (not yet started): billing/subscriptions, CSP
-enforce mode, legal/compliance review, a pilot customer.
+| 53 | Aug 13 | **CSP enforced** — flipped `Content-Security-Policy-Report-Only` (shipped in the Aug 12 security pass, #31) to enforcing. Verified quiet first: a source + rendered-HTML audit of every page found nothing outside the existing allowlist (same-origin, `data:`/`blob:` images, `*.supabase.co`); Resend (the one external call) is server-side, not subject to browser CSP. Marlon click-tested the deploy preview across dashboard/participants/calendar/reports/settings with devtools open before merge — no violations | `next.config.ts` (`f2f3ef0`, #40) |
+
+**Blueprint backlog complete; two SaaS-readiness items shipped (self-serve
+signup, CSP enforce).** Setup outstanding: add `RESEND_API_KEY` to enable
+actual scheduled-report sending. Next SaaS milestones (not yet started):
+billing/subscriptions, legal/compliance review, a pilot customer.
 
 ---
 
