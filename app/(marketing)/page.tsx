@@ -310,7 +310,7 @@ export default function MarketingHome() {
               <div className="priv reveal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
                 <h3>Role-based access</h3>
-                <p>Permissions enforced server-side, not just hidden in the UI. Viewers see aggregates only.</p>
+                <p>Admin, director, staff, and viewer roles, enforced server-side at the database layer — not just hidden in the UI.</p>
               </div>
               <div className="priv reveal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 2 4 6v6c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6z"/></svg>
