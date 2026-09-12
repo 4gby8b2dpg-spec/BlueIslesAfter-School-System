@@ -260,9 +260,12 @@ export async function runRetentionPurge(formData: FormData) {
   const { error } = await admin.from("participants").delete().in("id", ids).eq("org_id", ctx.orgId);
   if (error) return; // don't audit a purge that didn't actually happen
 
+  // Record that a purge happened without writing purged participants' names
+  // into audit_log, which is permanently append-only and has no purge of
+  // its own — that would defeat the erasure this action is meant to do.
   await logAudit(supabase, ctx.orgId, ctx.userId, "purge", "participants", null, {
     count: candidates.length,
-    names: candidates.map((c) => c.name),
+    participant_ids: ids,
   }, { retention_years: retentionYears });
 
   revalidatePath("/settings");
