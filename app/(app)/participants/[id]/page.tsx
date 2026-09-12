@@ -49,7 +49,7 @@ export default async function ParticipantProfile({
   const { data: p } = await supabase
     .from("participants")
     .select(
-      "id, first_name, last_name, grade, school, date_of_birth, gender, photo_consent, external_id, medical_notes",
+      "id, first_name, last_name, grade, school, date_of_birth, gender, photo_consent, external_id",
     )
     .eq("org_id", ctx.orgId)
     .eq("id", id)
