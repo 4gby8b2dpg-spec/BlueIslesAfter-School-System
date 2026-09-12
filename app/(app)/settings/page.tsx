@@ -16,6 +16,7 @@ import {
   revokeRegistrationLink,
   updateRetentionSettings,
   runRetentionPurge,
+  deleteOrg,
 } from "./actions";
 import { CopyField } from "@/components/copy-field";
 import { headers } from "next/headers";
@@ -609,6 +610,40 @@ export default async function SettingsPage() {
             </table>
           </div>
         )}
+      </section>
+
+      {/* DANGER ZONE */}
+      <section className="card">
+        <div className="card-head">
+          <div className="card-title">
+            <span className="spot coral"><CardIcon name="trash" /></span>
+            <h2>Delete organization</h2>
+          </div>
+        </div>
+        <p className="threshold-note">
+          Permanently deletes <strong>{ctx.orgName}</strong> and everything in it — participants,
+          guardians, programs, enrollments, attendance, surveys, the audit log, all of it. This
+          cannot be undone. Your own sign-in is not deleted, and any other organization you belong
+          to is unaffected.
+        </p>
+        <form action={deleteOrg} className="purge-confirm">
+          <input
+            type="text"
+            name="confirmText"
+            placeholder={`Type "${ctx.orgName}" to confirm`}
+            required
+          />
+          <label className="purge-check">
+            <input type="checkbox" name="confirmCheck" required />
+            <span>
+              I understand this permanently deletes {ctx.orgName} and all of its data — this
+              cannot be undone.
+            </span>
+          </label>
+          <button className="btn-danger" type="submit">
+            Delete organization
+          </button>
+        </form>
       </section>
     </main>
   );

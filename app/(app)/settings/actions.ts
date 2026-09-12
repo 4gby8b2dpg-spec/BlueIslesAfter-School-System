@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -272,6 +273,33 @@ export async function runRetentionPurge(formData: FormData) {
   revalidatePath("/participants");
   revalidatePath("/dashboard");
   revalidatePath("/analytics");
+}
+
+// ---------------------------------------------------------------------
+// Delete organization. Every org-scoped table has ON DELETE CASCADE back
+// to orgs(id) (see 0001_init.sql), so removing the orgs row is sufficient
+// to erase everything belonging to it — including that org's own
+// audit_log rows, which is correct here: once the org itself is gone
+// there's nothing left for an audit trail to be about. Runs on the
+// service-role client since RLS has no delete policy on orgs at all.
+// Deliberately does not touch auth.users/profiles — a person can belong
+// to more than one org, so deleting one org must not delete their login.
+// ---------------------------------------------------------------------
+export async function deleteOrg(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+
+  const confirmText = String(formData.get("confirmText") ?? "").trim();
+  const confirmCheck = String(formData.get("confirmCheck") ?? "");
+  if (confirmText !== ctx.orgName || confirmCheck !== "on") return;
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("orgs").delete().eq("id", ctx.orgId);
+  if (error) return;
+
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
 }
 
 // ---------------------------------------------------------------------
