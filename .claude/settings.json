@@ -5,7 +5,19 @@
       "Bash(open \"http://localhost:3210/dashboard\")",
       "Bash(rm -rf .next-build-check)",
       "Bash(timeout 300 npx next build)",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(sed -n '/create table participants/,/^\\);/p' supabase/migrations/0001_init.sql)",
+      "Bash(sed -n '/create table guardians/,/^\\);/p' supabase/migrations/0001_init.sql)",
+      "Bash(sed -n '/create table enrollments/,/^\\);/p' supabase/migrations/0001_init.sql)",
+      "Bash(sed -n '/create table programs/,/^\\);/p' supabase/migrations/0001_init.sql)",
+      "Bash(cd \"/Users/marlonrichards/afterschool test site\" && echo \"=== enums ===\" && grep -n \"enrollment_source\\\\|enrollment_status\\\\|program_status\" supabase/migrations/*.sql | grep \"create type\" && echo \"=== orgs table \\(public token?\\) ===\" && sed -n '/create table orgs/,/^\\);/p' supabase/migrations/0001_init.sql && echo \"=== survey public route structure ===\" && ls \"app/survey/[token]/\" 2>/dev/null && echo \"=== survey submit RPC signature ===\" && grep -n \"submit_survey_response\\\\|create or replace function\" supabase/migrations/0005_survey_public.sql)",
+      "Bash(echo \"tsc: $?\")",
+      "Bash(curl -s -o /dev/null -w \"list:%{http_code} \" \"http://localhost:3210/participants\")",
+      "Bash(curl -s -o /dev/null -w \"profile:%{http_code}\\\\n\" \"http://localhost:3210/participants/00000000-0000-0000-0000-000000000000\")",
+      "Bash(git pull *)"
+    ],
+    "additionalDirectories": [
+      "/Users/marlonrichards/afterschool test site/supabase/migrations"
     ]
   }
 }
