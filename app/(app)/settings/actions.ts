@@ -35,6 +35,66 @@ async function requireAdmin() {
   return ctx;
 }
 
+// ---------------------------------------------------------------------
+// Org branding (0020). orgs only ever had a read policy before this —
+// these are the first writes to it that aren't the service-role client.
+// ---------------------------------------------------------------------
+export async function renameOrg(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+
+  const name = String(formData.get("name") ?? "").trim().slice(0, 120);
+  if (!name) return;
+
+  const supabase = await createClient();
+  const admin = createAdminClient();
+  const { error } = await admin.from("orgs").update({ name }).eq("id", ctx.orgId);
+  if (error) return;
+
+  await logAudit(supabase, ctx.orgId, ctx.userId, "update", "orgs", ctx.orgId, { name: ctx.orgName }, { name });
+  revalidatePath("/settings");
+  revalidatePath("/dashboard");
+}
+
+const LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/svg+xml", "image/webp"]);
+const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+
+export async function uploadOrgLogo(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+
+  const file = formData.get("logo");
+  if (!(file instanceof File) || file.size === 0) return;
+  if (!LOGO_TYPES.has(file.type) || file.size > LOGO_MAX_BYTES) return;
+
+  const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+  const path = `${ctx.orgId}/logo.${ext}`;
+
+  const supabase = await createClient();
+  const admin = createAdminClient();
+  await admin.storage.createBucket("org-logos", {
+    public: true,
+    fileSizeLimit: LOGO_MAX_BYTES,
+    allowedMimeTypes: [...LOGO_TYPES],
+  });
+
+  const { error: uploadError } = await admin.storage
+    .from("org-logos")
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (uploadError) return;
+
+  // Cache-bust so a replaced logo shows immediately instead of the old
+  // cached image at the same URL.
+  const { data: pub } = admin.storage.from("org-logos").getPublicUrl(path);
+  const logoUrl = `${pub.publicUrl}?v=${Date.now()}`;
+
+  await admin.from("orgs").update({ logo_url: logoUrl }).eq("id", ctx.orgId);
+
+  await logAudit(supabase, ctx.orgId, ctx.userId, "update", "orgs", ctx.orgId, null, { logo_url: logoUrl });
+  revalidatePath("/settings");
+  revalidatePath("/dashboard");
+}
+
 export async function updateMemberRole(formData: FormData) {
   const ctx = await requireAdmin();
   if (!ctx) return;

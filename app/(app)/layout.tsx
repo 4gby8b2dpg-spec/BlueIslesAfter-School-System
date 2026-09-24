@@ -48,7 +48,12 @@ export default async function AppLayout({
         </div>
 
         <div className="app-org-card">
-          <span className="app-org-badge">{orgInitials || "OR"}</span>
+          {ctx.orgLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="app-org-logo" src={ctx.orgLogoUrl} alt={`${ctx.orgName} logo`} />
+          ) : (
+            <span className="app-org-badge">{orgInitials || "OR"}</span>
+          )}
           <span>
             <div className="app-org-name">{ctx.orgName}</div>
             <div className="app-org-role">{ctx.role}</div>

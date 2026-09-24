@@ -224,6 +224,14 @@
   border-radius: 14px;
   padding: 11px 12px;
 }
+.app-org-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  flex: none;
+  object-fit: contain;
+  background: #fff;
+}
 .app-org-badge {
   width: 38px;
   height: 38px;

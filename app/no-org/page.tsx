@@ -22,11 +22,21 @@ export default async function NoOrgPage() {
   // owning user under RLS, which would defeat this exact check. Use the
   // admin client, scoped to this user's own id (from a verified session).
   const admin = createAdminClient();
-  const { count } = await admin
-    .from("memberships")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
-  const hasPendingMembership = (count ?? 0) > 0;
+  const [{ count: activeCount }, { count: pendingCount }] = await Promise.all([
+    admin
+      .from("memberships")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("status", "active"),
+    admin
+      .from("memberships")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .neq("status", "active"),
+  ]);
+
+  if ((activeCount ?? 0) > 0) redirect("/dashboard");
+  const hasPendingMembership = (pendingCount ?? 0) > 0;
 
   return (
     <main className="login-wrap">

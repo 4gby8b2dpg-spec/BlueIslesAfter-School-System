@@ -2,6 +2,8 @@ import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { PageHead } from "@/components/page-head";
 import {
+  renameOrg,
+  uploadOrgLogo,
   updateMemberRole,
   setMemberStatus,
   addSite,
@@ -131,6 +133,46 @@ export default async function SettingsPage() {
       <PageHead href="/settings" title="Settings" tone="teal">
         Manage users, sites, terms, and review the audit log.
       </PageHead>
+
+      {/* ORG PROFILE */}
+      <section className="card">
+        <div className="card-head">
+          <div className="card-title">
+            <span className="spot amber"><CardIcon name="gear" /></span>
+            <h2>Organization profile</h2>
+          </div>
+          <span className="card-sub">Shown across the app, reports, and certificates</span>
+        </div>
+        <div className="org-profile-grid">
+          <form action={renameOrg} className="threshold-form">
+            <label>
+              Organization name
+              <input name="name" defaultValue={ctx.orgName} required maxLength={120} />
+            </label>
+            <button className="btn-primary" type="submit">
+              Save name
+            </button>
+          </form>
+
+          <form action={uploadOrgLogo} className="threshold-form">
+            <div className="org-logo-preview">
+              {ctx.orgLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={ctx.orgLogoUrl} alt={`${ctx.orgName} logo`} />
+              ) : (
+                <span className="empty">No logo uploaded</span>
+              )}
+            </div>
+            <label>
+              Upload logo (PNG, JPG, SVG, or WebP, max 2MB)
+              <input name="logo" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" required />
+            </label>
+            <button className="btn-primary" type="submit">
+              Upload
+            </button>
+          </form>
+        </div>
+      </section>
 
       {/* USERS */}
       <section className="card">
