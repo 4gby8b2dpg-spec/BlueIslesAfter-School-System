@@ -64,6 +64,12 @@ export async function createRecurringSchedule(
   }
 
   const supabase = await createClient();
+  const { error: recurrenceError } = await supabase.from("session_recurrencies").insert({
+    id: recurrenceId,
+    org_id: ctx.orgId,
+  });
+  if (recurrenceError) return { ok: false as const, error: recurrenceError.message };
+
   const { error } = await supabase.from("sessions").insert(rows);
   if (error) return { ok: false as const, error: error.message };
 

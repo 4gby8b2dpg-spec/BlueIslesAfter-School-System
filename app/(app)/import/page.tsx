@@ -21,7 +21,8 @@ export default async function ImportPage() {
     supabase
       .from("participants")
       .select("external_id, first_name, last_name, date_of_birth")
-      .eq("org_id", ctx.orgId),
+      .eq("org_id", ctx.orgId)
+      .is("deleted_at", null),
     supabase
       .from("imports")
       .select(

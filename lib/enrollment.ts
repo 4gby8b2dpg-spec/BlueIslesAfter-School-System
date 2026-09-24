@@ -32,10 +32,11 @@ export async function autoPromoteWaitlist(
 
   const { data: waiting } = await supabase
     .from("enrollments")
-    .select("id, participants(first_name, last_name)")
+    .select("id, participants!inner(first_name, last_name)")
     .eq("org_id", orgId)
     .eq("program_id", programId)
     .eq("status", "waitlisted")
+    .is("participants.deleted_at", null)
     .order("waitlist_position", { ascending: true })
     .limit(seats);
 

@@ -125,11 +125,18 @@ async function approveOne(
     }
   }
 
-  // 3) the enrollment(s) — program_choices (0014) may carry one per weekday;
-  // older rows have just program_id. Skip anything deleted since submission.
+  // 3) the enrollment(s) — prefer normalized choices, with the legacy JSON
+  // snapshot as a compatibility fallback for rows created before 0023.
+  const { data: relationalChoices } = await supabase
+    .from("registration_program_choices")
+    .select("program_id, position")
+    .eq("registration_id", registrationId)
+    .order("position", { ascending: true });
   const choices = reg.program_choices as { id: string }[] | null;
-  const programIds: string[] = choices?.length
-    ? choices.map((c) => c.id)
+  const programIds: string[] = relationalChoices?.length
+    ? relationalChoices.map((choice) => choice.program_id).filter((id): id is string => Boolean(id))
+    : choices?.length
+      ? choices.map((c) => c.id)
     : reg.program_id
       ? [reg.program_id as string]
       : [];

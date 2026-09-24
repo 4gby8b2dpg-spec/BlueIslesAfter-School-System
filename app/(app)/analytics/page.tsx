@@ -71,7 +71,11 @@ export default async function AnalyticsPage({
   const [programsRes, sitesRes, participantsRes, enrollRes, sessionsRes] = await Promise.all([
     supabase.from("programs").select("id, name, site_id").eq("org_id", ctx.orgId),
     supabase.from("sites").select("id, name").eq("org_id", ctx.orgId),
-    supabase.from("participants").select("id, grade").eq("org_id", ctx.orgId),
+    supabase
+      .from("participants")
+      .select("id, grade")
+      .eq("org_id", ctx.orgId)
+      .is("deleted_at", null),
     supabase.from("enrollments").select("participant_id, program_id, status").eq("org_id", ctx.orgId),
     supabase
       .from("sessions")

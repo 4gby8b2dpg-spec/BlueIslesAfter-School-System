@@ -38,9 +38,10 @@ export default async function ProgramDetail({
   const [enrollRes, sessionsRes, participantsRes, termsRes] = await Promise.all([
     supabase
       .from("enrollments")
-      .select("id, status, waitlist_position, participants(id, first_name, last_name, grade)")
+      .select("id, status, waitlist_position, participants!inner(id, first_name, last_name, grade)")
       .eq("org_id", ctx.orgId)
-      .eq("program_id", id),
+      .eq("program_id", id)
+      .is("participants.deleted_at", null),
     supabase
       .from("sessions")
       .select("id, starts_at, room, status")

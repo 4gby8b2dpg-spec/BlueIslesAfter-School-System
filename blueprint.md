@@ -167,7 +167,25 @@ Pattern borrowed from Google Forms / SurveyMonkey builders, plus program-evaluat
 
 ## 2. Database Schema
 
-Relational (PostgreSQL). Conventions: every table has `id` (UUID, PK), `created_at`, `updated_at`; soft delete via `deleted_at` where noted; all foreign keys indexed. Multi-tenant ready via `org_id` on every table (omitted below for brevity — assume it everywhere).
+Relational (PostgreSQL). The default convention is an immutable UUID `id`,
+`created_at`, `updated_at`, indexed foreign keys, and `org_id` on every
+tenant-owned table (omitted below for brevity). Exceptions are explicit:
+`profiles.id` is the Supabase Auth user ID, `org_settings.org_id` is the
+singleton primary key, junction tables may use lifecycle timestamps only when
+their membership itself is mutable, and append-only logs retain their event
+timestamp without `updated_at` or soft deletion. Soft deletion uses
+`deleted_at` only for entity tables where records must remain queryable after
+removal; statuses such as `revoked`, `closed`, `withdrawn`, and `dismissed`
+are used for append-only or token lifecycle records.
+
+Migrations `0021_data_model_integrity.sql` and
+`0022_session_recurrencies.sql` add the first integrity and timestamp
+consistency pass plus an explicit parent for session recurrence groups.
+`0023_registration_program_choices.sql` adds the relational registration-choice
+table while retaining the JSON column temporarily for compatibility. The JSON
+column should be removed only after all reads and writes have moved to the
+child table. Broader soft-delete rollout remains a coordinated application
+change.
 
 ### 2.1 Entity-relationship overview
 

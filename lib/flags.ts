@@ -119,8 +119,9 @@ export async function computeChronicAbsence(
 
   let q = supabase
     .from("attendance_records")
-    .select("status, participant_id, participants(first_name, last_name), sessions!inner(starts_at)")
+    .select("status, participant_id, participants!inner(first_name, last_name), sessions!inner(starts_at)")
     .eq("org_id", orgId)
+    .is("participants.deleted_at", null)
     .gte("sessions.starts_at", start.toISOString())
     .lte("sessions.starts_at", end.toISOString());
   if (participantId) q = q.eq("participant_id", participantId);

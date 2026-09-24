@@ -29,10 +29,11 @@ export default async function CheckInPage({
   const [enrollRes, attRes] = await Promise.all([
     supabase
       .from("enrollments")
-      .select("participant_id, participants(first_name, last_name, grade)")
+      .select("participant_id, participants!inner(first_name, last_name, grade)")
       .eq("org_id", ctx.orgId)
       .eq("program_id", session.program_id)
-      .eq("status", "enrolled"),
+      .eq("status", "enrolled")
+      .is("participants.deleted_at", null),
     supabase
       .from("attendance_records")
       .select("participant_id, status")

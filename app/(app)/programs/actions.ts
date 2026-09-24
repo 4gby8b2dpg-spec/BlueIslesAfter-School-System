@@ -195,6 +195,16 @@ export async function cloneProgram(formData: FormData) {
           status: "scheduled",
         };
       });
+      const recurrenceRows = [...new Set(recMap.values())].map((id) => ({
+        id,
+        org_id: ctx.orgId,
+      }));
+      if (recurrenceRows.length) {
+        const { error: recurrenceError } = await supabase
+          .from("session_recurrencies")
+          .insert(recurrenceRows);
+        if (recurrenceError) return;
+      }
       const { data: inserted } = await supabase.from("sessions").insert(rows).select("id");
       sessionCount = inserted?.length ?? 0;
     }
