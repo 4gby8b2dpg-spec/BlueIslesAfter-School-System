@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { safeRedirectPath } from "@/lib/safe-redirect.mjs";
 import "./login.css";
 
 export default function LoginPage() {
@@ -26,8 +27,9 @@ export default function LoginPage() {
       return;
     }
     // Honor ?next=… if present (set by the middleware redirect), else dashboard.
-    const next =
-      new URLSearchParams(window.location.search).get("next") || "/dashboard";
+    const next = safeRedirectPath(
+      new URLSearchParams(window.location.search).get("next"),
+    );
     // Full navigation so the server re-reads the fresh auth cookie.
     router.push(next);
     router.refresh();

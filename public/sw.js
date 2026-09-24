@@ -4,7 +4,7 @@
  * populate the cache; when the network is gone, the last-seen response is
  * served so the kiosk opens from a cold start. API calls are never cached.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const RUNTIME = `bi-runtime-${VERSION}`;
 
 self.addEventListener("install", () => {
@@ -26,14 +26,23 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return; // never cache the sync POSTs
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/")) return; // always hit the network
+  // Never cache dashboards, participant profiles, reports, settings, or API
+  // responses. The worker exists solely to keep the kiosk usable offline.
+  const isKioskPage = url.pathname.startsWith("/kiosk/");
+  const isStaticAsset =
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/fonts/") ||
+    url.pathname.startsWith("/img/");
+  if (!isKioskPage && !isStaticAsset) return;
 
   event.respondWith(
     (async () => {
       const cache = await caches.open(RUNTIME);
       try {
         const res = await fetch(req);
-        if (res && res.status === 200) cache.put(req, res.clone());
+        if (res && res.status === 200 && !res.headers.get("Set-Cookie")) {
+          cache.put(req, res.clone());
+        }
         return res;
       } catch {
         const cached = await cache.match(req);

@@ -97,6 +97,9 @@ const ORG_SCOPED_TABLES = [
   "registrations",
   "report_deliveries",
   "report_schedules",
+  "report_narratives",
+  "registration_program_choices",
+  "session_recurrencies",
 ];
 
 // ---------------------------------------------------------------- harness
@@ -282,6 +285,17 @@ async function checkRoleLimits(aClient, orgA) {
     "viewer: insert rejected",
     Boolean(viewerInsertError),
     viewerInsertError ? "read-only enforced" : "INSERT SUCCEEDED — viewer is not read-only",
+  );
+
+  const { data: viewerParticipants, error: viewerReadError } = await viewerClient
+    .from("participants")
+    .select("id")
+    .eq("org_id", orgA)
+    .limit(1);
+  record(
+    "viewer: participant records hidden",
+    Boolean(viewerReadError) || !viewerParticipants?.length,
+    viewerReadError ? "denied by policy" : viewerParticipants?.length ? "PII WAS VISIBLE" : "no rows visible",
   );
 }
 

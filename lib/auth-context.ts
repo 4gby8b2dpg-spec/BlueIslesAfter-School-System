@@ -40,13 +40,14 @@ export async function getAppContext(): Promise<AppContext | null> {
   if (!user) return null;
 
   const admin = createAdminClient();
-  let { data: membership, error: membershipError } = await admin
+  const { data: initialMembership, error: membershipError } = await admin
     .from("memberships")
     .select("org_id, role, orgs(name, logo_url), profiles(full_name)")
     .eq("user_id", user.id)
     .eq("status", "active")
     .limit(1)
     .maybeSingle();
+  let membership = initialMembership;
   if (membershipError) {
     ({ data: membership } = await admin
       .from("memberships")
@@ -90,13 +91,14 @@ export async function requireAppContext(): Promise<AppContext> {
   if (!user) redirect("/login");
 
   const admin = createAdminClient();
-  let { data: membership, error: membershipError } = await admin
+  const { data: initialMembership, error: membershipError } = await admin
     .from("memberships")
     .select("org_id, role, orgs(name, logo_url), profiles(full_name)")
     .eq("user_id", user.id)
     .eq("status", "active")
     .limit(1)
     .maybeSingle();
+  let membership = initialMembership;
   if (membershipError) {
     ({ data: membership } = await admin
       .from("memberships")
