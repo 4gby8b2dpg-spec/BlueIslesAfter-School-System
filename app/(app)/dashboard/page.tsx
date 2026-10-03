@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { requireAppContext } from "@/lib/auth-context";
+import { createClient } from "@/lib/supabase/server";
+import { toLocalInput } from "@/lib/timezone";
 import { getDashboardData } from "@/lib/dashboard";
 import { Sparkline } from "@/components/sparkline";
 import { PngExportButton } from "@/components/png-export-button";
@@ -58,6 +60,30 @@ export default async function DashboardPage() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
+  // Staff timesheet nudge: has this person clocked in today (at any site)?
+  // "Today" is judged in each site's own timezone, same as the timesheet.
+  const canClock = ["admin", "director", "staff"].includes(ctx.role);
+  let clockedInToday = true;
+  let onClockNow = false;
+  if (canClock) {
+    const supabase = await createClient();
+    const since = new Date(new Date().getTime() - 36 * 3_600_000).toISOString();
+    const { data: recent } = await supabase
+      .from("staff_time_entries")
+      .select("clock_in_at, clock_out_at, sites(timezone)")
+      .eq("user_id", ctx.userId)
+      .gte("clock_in_at", since);
+    const todayIn = (tz: string) =>
+      new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    clockedInToday = false;
+    for (const e of recent ?? []) {
+      const site = Array.isArray(e.sites) ? e.sites[0] : e.sites;
+      const tz = site?.timezone ?? "America/New_York";
+      if (toLocalInput(e.clock_in_at, tz).slice(0, 10) === todayIn(tz)) clockedInToday = true;
+      if (!e.clock_out_at) onClockNow = true;
+    }
+  }
+
   const nudge =
     d.kpis.atRisk > 0
       ? `Attendance is running at ${kpiFmt(d.kpis.attRate, "%")} over the last four weeks. ${d.kpis.atRisk} participant${d.kpis.atRisk === 1 ? " has" : "s have"} slipped into the at-risk range — worth a look before pickup.`
@@ -65,6 +91,13 @@ export default async function DashboardPage() {
 
   return (
     <main className="dash">
+      {canClock && !clockedInToday && !onClockNow && (
+        <section className="card" role="status" style={{ padding: "12px 16px", marginBottom: 16 }}>
+          <p style={{ margin: 0, fontSize: 14 }}>
+            You haven&rsquo;t clocked in today. <Link href="/timesheet">Clock in at your site</Link>
+          </p>
+        </section>
+      )}
       {/* welcome */}
       <section className="dash-welcome">
         <span className="dash-blob a" aria-hidden="true" />

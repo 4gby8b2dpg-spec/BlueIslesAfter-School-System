@@ -1,0 +1,126 @@
+/* Timesheet — staff clock in/out and the monthly tally. Uses app.css tokens. */
+
+.ts-alert {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--warn-bg);
+  color: var(--crit);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ts-warn {
+  margin: 0;
+  font-size: 13px;
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.ts-clock-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
+}
+.ts-clock-body p {
+  margin: 0;
+  font-size: 15px;
+}
+.ts-clock-body label,
+.ts-filters label,
+.ts-correct-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.ts-clock-body select,
+.ts-filters select,
+.ts-correct-form input {
+  font: inherit;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
+  min-width: 180px;
+}
+
+.ts-scroll {
+  overflow-x: auto;
+}
+.ts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.ts-table th,
+.ts-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  vertical-align: top;
+}
+.ts-table th {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.ts-table .right {
+  text-align: right;
+}
+.ts-table .ts-total td {
+  font-weight: 700;
+  border-bottom: 0;
+}
+
+.ts-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.ts-export {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent-ink);
+  text-decoration: none;
+  padding: 9px 4px;
+}
+.ts-export:hover {
+  text-decoration: underline;
+}
+
+.ts-correct summary {
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent-ink);
+  list-style: none;
+}
+.ts-correct-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  padding: 12px 0 4px;
+  min-width: 320px;
+}
+.ts-correct-form input[type="text"] {
+  min-width: 160px;
+}
+
+@media (max-width: 640px) {
+  .ts-clock-body select,
+  .ts-filters select,
+  .ts-correct-form input {
+    min-width: 0;
+    width: 100%;
+  }
+}

@@ -46,6 +46,12 @@ export const NAV: NavItem[] = [
     blurb: "Set up recurring weekly program schedules and see the week at a glance, by site.",
   },
   {
+    href: "/timesheet",
+    label: "Timesheet",
+    title: "Staff Timesheet",
+    blurb: "Clock in and out at your site. Admins get the monthly hours tally for payroll.",
+  },
+  {
     href: "/surveys",
     label: "Surveys",
     title: "Surveys & Feedback",
