@@ -179,7 +179,7 @@ function revalidateAfterApproval(programIds: Iterable<string>) {
 
 export async function approveRegistration(formData: FormData) {
   const ctx = await requireAppContext();
-  if (!["admin", "director", "staff"].includes(ctx.role)) return;
+  if (!["admin", "director"].includes(ctx.role)) return;
   const registrationId = String(formData.get("registrationId") ?? "");
   if (!registrationId) return;
 
@@ -190,7 +190,7 @@ export async function approveRegistration(formData: FormData) {
 
 export async function bulkApproveRegistrations(formData: FormData) {
   const ctx = await requireAppContext();
-  if (!["admin", "director", "staff"].includes(ctx.role)) return;
+  if (!["admin", "director"].includes(ctx.role)) return;
   const ids = formData
     .getAll("ids")
     .map(String)

@@ -80,7 +80,8 @@ export default async function RegistrationsPage() {
 
   const pending = regs.filter((r) => r.status === "pending");
   const processed = regs.filter((r) => r.status !== "pending").slice(0, 20);
-  const canReview = ["admin", "director", "staff"].includes(ctx.role);
+  const canApprove = ["admin", "director"].includes(ctx.role);
+  const canReject = canApprove || ctx.role === "staff";
 
   return (
     <main className="dash">
@@ -117,7 +118,7 @@ export default async function RegistrationsPage() {
         </section>
       ) : (
         <div className="reg-queue">
-          {canReview && pending.length > 1 && (
+          {canApprove && pending.length > 1 && (
             <form id="bulk-approve" action={bulkApproveRegistrations} className="reg-bulk">
               <span className="reg-bulk-hint">
                 Tick “Select” on the cards you’ve checked, then approve them together.
@@ -143,7 +144,7 @@ export default async function RegistrationsPage() {
                     {programNames(r) ?? "No program chosen"} · submitted {fmtDate(r.created_at)}
                   </p>
                 </div>
-                {canReview && (
+                {canApprove && pending.length > 1 && (
                   <label className="reg-pick">
                     {/* lives outside the bulk <form> — linked by id, because the
                         card's own approve/reject forms can't nest another */}
@@ -189,14 +190,16 @@ export default async function RegistrationsPage() {
 
               {r.note && <p className="reg-note">“{r.note}”</p>}
 
-              {canReview && (
+              {canReject && (
                 <div className="reg-actions">
-                  <form action={approveRegistration}>
-                    <input type="hidden" name="registrationId" value={r.id} />
-                    <button className="reg-approve" type="submit">
-                      Approve &amp; enroll
-                    </button>
-                  </form>
+                  {canApprove && (
+                    <form action={approveRegistration}>
+                      <input type="hidden" name="registrationId" value={r.id} />
+                      <button className="reg-approve" type="submit">
+                        Approve &amp; enroll
+                      </button>
+                    </form>
+                  )}
                   <form action={rejectRegistration} className="reg-reject-form">
                     <input type="hidden" name="registrationId" value={r.id} />
                     <input
