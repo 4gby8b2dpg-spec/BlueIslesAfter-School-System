@@ -24,7 +24,7 @@ export async function createOrgForSelf(formData: FormData) {
   if (!user) redirect("/login");
 
   const name = String(formData.get("orgName") ?? "").trim().slice(0, 120);
-  if (!name) return;
+  if (!name) redirect("/no-org?error=name");
 
   const admin = createAdminClient();
 
@@ -33,18 +33,25 @@ export async function createOrgForSelf(formData: FormData) {
   // Admin client, not RLS: is_org_member() (and the memberships read policy)
   // requires status='active', so an invited-but-inactive row would otherwise
   // be invisible to this exact check.
-  const { count } = await admin
+  const { count, error: countError } = await admin
     .from("memberships")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
-  if (count && count > 0) return;
+  if (countError) {
+    console.error("[no-org] membership check failed:", countError);
+    redirect("/no-org?error=failed");
+  }
+  if (count && count > 0) redirect("/no-org");
 
   const { data: org, error: orgError } = await admin
     .from("orgs")
     .insert({ name })
     .select("id")
     .single();
-  if (orgError || !org) return;
+  if (orgError || !org) {
+    console.error("[no-org] org insert failed:", orgError);
+    redirect("/no-org?error=failed");
+  }
 
   const { error: membershipError } = await admin.from("memberships").insert({
     org_id: org.id,
@@ -52,7 +59,10 @@ export async function createOrgForSelf(formData: FormData) {
     role: "admin",
     status: "active",
   });
-  if (membershipError) return;
+  if (membershipError) {
+    console.error("[no-org] membership insert failed:", membershipError);
+    redirect("/no-org?error=failed");
+  }
 
   // Membership now exists, so the regular RLS client can write the audit log.
   await supabase.from("audit_log").insert({

@@ -10,7 +10,12 @@ import "../login/login.css";
 //   - a row exists (e.g. status 'invited') → they belong to an org that
 //     already exists and are waiting on that org's admin to activate them.
 //   - no row at all → brand-new signup, offer to create their own org.
-export default async function NoOrgPage() {
+export default async function NoOrgPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -68,6 +73,13 @@ export default async function NoOrgPage() {
               You&rsquo;re signed in as <strong>{user.email}</strong>. Create your
               organization to get started — you&rsquo;ll be its first admin.
             </p>
+            {error && (
+              <p className="login-sub" role="alert" style={{ color: "#b42318" }}>
+                {error === "name"
+                  ? "Please enter an organization name."
+                  : "We couldn't create your organization. Please try again. If it keeps happening, let us know."}
+              </p>
+            )}
             <form action={createOrgForSelf} style={{ textAlign: "left" }}>
               <label className="login-field">
                 <span>Organization name</span>
