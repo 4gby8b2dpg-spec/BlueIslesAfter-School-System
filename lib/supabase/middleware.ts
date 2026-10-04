@@ -6,6 +6,17 @@ import { NextResponse, type NextRequest } from "next/server";
 // Routes under here require a signed-in user.
 const PROTECTED_PREFIXES = ["/dashboard"];
 
+// Signed-in app pages end the session after an hour with no requests.
+// The timestamp lives in a session cookie (gone when the browser closes).
+// Public pages (kiosk, survey, registration, marketing) are never signed out.
+const IDLE_MS = 60 * 60 * 1000;
+const ACTIVITY_COOKIE = "bi_active";
+const APP_PREFIXES = [
+  "/dashboard", "/analytics", "/attendance", "/calendar", "/import",
+  "/participants", "/programs", "/recognition", "/registrations", "/reports",
+  "/settings", "/surveys", "/timesheet", "/timetable",
+];
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -46,6 +57,29 @@ export async function updateSession(request: NextRequest) {
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
+  }
+
+  if (user) {
+    const last = Number(request.cookies.get(ACTIVITY_COOKIE)?.value ?? 0);
+    const onAppPage = APP_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+    if (last && Date.now() - last > IDLE_MS && onAppPage) {
+      // scope "local" signs out this browser only, not the person's other devices.
+      await supabase.auth.signOut({ scope: "local" });
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.search = "";
+      url.searchParams.set("reason", "idle");
+      const redirect = NextResponse.redirect(url);
+      response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+      redirect.cookies.delete(ACTIVITY_COOKIE);
+      return redirect;
+    }
+    response.cookies.set(ACTIVITY_COOKIE, String(Date.now()), {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: request.nextUrl.protocol === "https:",
+    });
   }
 
   return response;

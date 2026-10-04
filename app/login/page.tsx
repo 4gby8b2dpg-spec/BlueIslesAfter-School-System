@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, setSessionOnly } from "@/lib/supabase/client";
 import { safeRedirectPath } from "@/lib/safe-redirect.mjs";
 import "./login.css";
 
@@ -12,13 +12,19 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Set by the idle check (?reason=idle) when someone was signed out for inactivity.
+  const [idleNotice] = useState(
+    () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("reason") === "idle",
+  );
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setBusy(true);
+    setSessionOnly(!remember);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
@@ -51,6 +57,12 @@ export default function LoginPage() {
         <h1>Sign in</h1>
         <p className="login-sub">Welcome back. Enter your details to continue.</p>
 
+        {idleNotice && (
+          <p className="login-sub" role="status" style={{ color: "#b45309", fontWeight: 600 }}>
+            You were signed out after an hour of inactivity.
+          </p>
+        )}
+
         <label className="login-field">
           <span>Email</span>
           <input
@@ -73,6 +85,11 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
           />
+        </label>
+
+        <label className="login-remember" style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 0 12px", fontSize: 14 }}>
+          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+          Remember me on this device
         </label>
 
         {error && (

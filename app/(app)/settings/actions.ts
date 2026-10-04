@@ -481,18 +481,20 @@ export async function revokeRegistrationLink(formData: FormData) {
 // sign in with that email (see lib/invites.ts).
 // ---------------------------------------------------------------------
 const ROLES = ["admin", "director", "staff", "viewer"] as const;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export async function addMember(formData: FormData) {
-  const ctx = await requireAdmin();
-  if (!ctx) redirect("/settings?invite=denied");
+type AddResult = "added" | "pending" | "exists" | "failed";
 
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const role = String(formData.get("role") ?? "");
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !(ROLES as readonly string[]).includes(role)) {
-    redirect("/settings?invite=invalid");
-  }
-
+// One person: attach now if they already have an account, otherwise save an
+// invite that's claimed at sign-in. Shared by the single and bulk add forms.
+async function addOneMember(
+  ctx: { orgId: string; userId: string },
+  email: string,
+  role: string,
+): Promise<AddResult> {
   const admin = createAdminClient();
+  const supabase = await createClient();
+
   const { data: profile } = await admin
     .from("profiles")
     .select("id")
@@ -506,7 +508,7 @@ export async function addMember(formData: FormData) {
       .eq("org_id", ctx.orgId)
       .eq("user_id", profile.id)
       .maybeSingle();
-    if (existing) redirect("/settings?invite=exists");
+    if (existing) return "exists";
 
     const { error } = await admin.from("memberships").insert({
       org_id: ctx.orgId,
@@ -516,12 +518,10 @@ export async function addMember(formData: FormData) {
     });
     if (error) {
       console.error("[settings] addMember membership insert failed:", error);
-      redirect("/settings?invite=failed");
+      return "failed";
     }
-    const supabase = await createClient();
     await logAudit(supabase, ctx.orgId, ctx.userId, "create", "memberships", null, null, { email, role });
-    revalidatePath("/settings");
-    redirect("/settings?invite=added");
+    return "added";
   }
 
   const { error } = await admin.from("org_invites").upsert(
@@ -530,12 +530,75 @@ export async function addMember(formData: FormData) {
   );
   if (error) {
     console.error("[settings] addMember invite insert failed:", error);
-    redirect("/settings?invite=failed");
+    return "failed";
   }
-  const supabase = await createClient();
   await logAudit(supabase, ctx.orgId, ctx.userId, "create", "org_invites", null, null, { email, role });
+  return "pending";
+}
+
+export async function addMember(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) redirect("/settings?invite=denied");
+
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const role = String(formData.get("role") ?? "");
+  if (!EMAIL_RE.test(email) || !(ROLES as readonly string[]).includes(role)) {
+    redirect("/settings?invite=invalid");
+  }
+
+  const result = await addOneMember(ctx, email, role);
   revalidatePath("/settings");
-  redirect("/settings?invite=pending");
+  redirect(`/settings?invite=${result}`);
+}
+
+// Paste a list: one email per line (or separated by commas/semicolons).
+// "email role" on a line overrides the default role for that person.
+const MAX_BULK = 200;
+
+export async function bulkAddMembers(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) redirect("/settings?invite=denied");
+
+  const defaultRole = String(formData.get("role") ?? "");
+  if (!(ROLES as readonly string[]).includes(defaultRole)) redirect("/settings?invite=invalid");
+
+  const tokens = String(formData.get("emails") ?? "")
+    .split(/[\n,;]+/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  // Keep the first entry for each email, so a repeat in the paste is ignored.
+  const people = new Map<string, string>();
+  const invalid: string[] = [];
+  for (const token of tokens) {
+    const [rawEmail, rawRole, extra] = token.split(/\s+/);
+    const email = (rawEmail ?? "").toLowerCase();
+    const role = rawRole ? rawRole.toLowerCase() : defaultRole;
+    if (!EMAIL_RE.test(email) || extra !== undefined || !(ROLES as readonly string[]).includes(role)) {
+      invalid.push(token);
+      continue;
+    }
+    if (!people.has(email)) people.set(email, role);
+  }
+
+  if (people.size > MAX_BULK) redirect(`/settings?bulk=too_many&max=${MAX_BULK}`);
+
+  const counts: Record<AddResult, number> = { added: 0, pending: 0, exists: 0, failed: 0 };
+  for (const [email, role] of people) {
+    counts[await addOneMember(ctx, email, role)]++;
+  }
+
+  revalidatePath("/settings");
+  const params = new URLSearchParams({
+    bulk: "1",
+    added: String(counts.added),
+    pending: String(counts.pending),
+    exists: String(counts.exists),
+    failed: String(counts.failed),
+    invalid: String(invalid.length),
+    invalidList: invalid.slice(0, 20).join(", "),
+  });
+  redirect(`/settings?${params.toString()}`);
 }
 
 export async function revokeInvite(formData: FormData) {

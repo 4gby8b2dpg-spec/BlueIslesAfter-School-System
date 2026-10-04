@@ -20,6 +20,7 @@ import {
   runRetentionPurge,
   deleteOrg,
   addMember,
+  bulkAddMembers,
   revokeInvite,
 } from "./actions";
 import { CopyField } from "@/components/copy-field";
@@ -45,9 +46,19 @@ const INVITE_MESSAGES: Record<string, { tone: "good" | "bad"; text: string }> = 
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ invite?: string }>;
+  searchParams: Promise<{
+    invite?: string;
+    bulk?: string;
+    added?: string;
+    pending?: string;
+    exists?: string;
+    failed?: string;
+    invalid?: string;
+    invalidList?: string;
+    max?: string;
+  }>;
 }) {
-  const { invite } = await searchParams;
+  const { invite, bulk, added, pending, exists, failed, invalid, invalidList, max } = await searchParams;
   const ctx = await requireAppContext();
 
   if (ctx.role !== "admin") {
@@ -227,6 +238,44 @@ export default async function SettingsPage({
             Add person
           </button>
         </form>
+
+        <details style={{ marginTop: 12 }}>
+          <summary style={{ cursor: "pointer", fontWeight: 600 }}>Add several people at once</summary>
+          {bulk === "1" && (
+            <p role="status" className="settings-note" style={{ color: "var(--good)", fontWeight: 600 }}>
+              Added {added ?? 0}, invited {pending ?? 0}, already in the organization {exists ?? 0}
+              {Number(failed) > 0 ? `, failed ${failed}` : ""}
+              {Number(invalid) > 0 ? `. Skipped ${invalid} that didn't look right: ${invalidList ?? ""}` : ""}.
+            </p>
+          )}
+          {bulk === "too_many" && (
+            <p role="status" className="settings-note" style={{ color: "var(--crit)", fontWeight: 600 }}>
+              Please add up to {max ?? 200} people at a time.
+            </p>
+          )}
+          <form action={bulkAddMembers} style={{ display: "grid", gap: 8, marginTop: 8 }}>
+            <textarea
+              name="emails"
+              required
+              rows={6}
+              placeholder={"one email per line, for example:\nname@example.com\nsomeone@example.com director"}
+              aria-label="Email addresses, one per line"
+              style={{ font: "inherit", padding: 10, borderRadius: 10, border: "1px solid #dfe7e5", resize: "vertical" }}
+            />
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <span className="settings-muted">Everyone gets this role unless their line says otherwise:</span>
+              <select name="role" defaultValue="staff" aria-label="Default role">
+                <option value="staff">Staff</option>
+                <option value="director">Director</option>
+                <option value="viewer">Viewer</option>
+                <option value="admin">Admin</option>
+              </select>
+              <button className="btn-primary" type="submit">
+                Add all
+              </button>
+            </div>
+          </form>
+        </details>
 
         {(invitesRes.data ?? []).length > 0 && (
           <ul className="settings-list" style={{ marginTop: 14 }}>

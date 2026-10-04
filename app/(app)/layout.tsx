@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { AppNav } from "@/components/app-nav";
+import { IdleGuard } from "@/components/idle-guard";
 import "./app.css";
 
 async function signOut() {
@@ -33,6 +34,7 @@ export default async function AppLayout({
 
   return (
     <div className="app-shell">
+      <IdleGuard />
       <aside className="app-sidebar">
         <div className="app-logo">
           <span className="app-logo-mark">
