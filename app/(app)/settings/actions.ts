@@ -474,3 +474,84 @@ export async function revokeRegistrationLink(formData: FormData) {
   await logAudit(supabase, ctx.orgId, ctx.userId, "revoke", "registration_links", linkId, null, null);
   revalidatePath("/settings");
 }
+
+// ---------------------------------------------------------------------
+// Adding people (0026). An admin adds someone by email. An existing account
+// is attached straight away; anyone else waits in org_invites until they
+// sign in with that email (see lib/invites.ts).
+// ---------------------------------------------------------------------
+const ROLES = ["admin", "director", "staff", "viewer"] as const;
+
+export async function addMember(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) redirect("/settings?invite=denied");
+
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const role = String(formData.get("role") ?? "");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !(ROLES as readonly string[]).includes(role)) {
+    redirect("/settings?invite=invalid");
+  }
+
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (profile) {
+    const { data: existing } = await admin
+      .from("memberships")
+      .select("id")
+      .eq("org_id", ctx.orgId)
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    if (existing) redirect("/settings?invite=exists");
+
+    const { error } = await admin.from("memberships").insert({
+      org_id: ctx.orgId,
+      user_id: profile.id,
+      role,
+      status: "active",
+    });
+    if (error) {
+      console.error("[settings] addMember membership insert failed:", error);
+      redirect("/settings?invite=failed");
+    }
+    const supabase = await createClient();
+    await logAudit(supabase, ctx.orgId, ctx.userId, "create", "memberships", null, null, { email, role });
+    revalidatePath("/settings");
+    redirect("/settings?invite=added");
+  }
+
+  const { error } = await admin.from("org_invites").upsert(
+    { org_id: ctx.orgId, email, role, invited_by: ctx.userId },
+    { onConflict: "org_id,email" },
+  );
+  if (error) {
+    console.error("[settings] addMember invite insert failed:", error);
+    redirect("/settings?invite=failed");
+  }
+  const supabase = await createClient();
+  await logAudit(supabase, ctx.orgId, ctx.userId, "create", "org_invites", null, null, { email, role });
+  revalidatePath("/settings");
+  redirect("/settings?invite=pending");
+}
+
+export async function revokeInvite(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  const inviteId = String(formData.get("inviteId") ?? "");
+  if (!inviteId) return;
+
+  const supabase = await createClient();
+  const { data: before } = await supabase
+    .from("org_invites")
+    .select("email, role")
+    .eq("id", inviteId)
+    .maybeSingle();
+  if (!before) return;
+  await supabase.from("org_invites").delete().eq("id", inviteId);
+  await logAudit(supabase, ctx.orgId, ctx.userId, "delete", "org_invites", inviteId, before, null);
+  revalidatePath("/settings");
+}

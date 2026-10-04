@@ -19,6 +19,8 @@ import {
   updateRetentionSettings,
   runRetentionPurge,
   deleteOrg,
+  addMember,
+  revokeInvite,
 } from "./actions";
 import { CopyField } from "@/components/copy-field";
 import { headers } from "next/headers";
@@ -31,7 +33,21 @@ export const dynamic = "force-dynamic";
 
 const ROLES = ["admin", "director", "staff", "viewer"];
 
-export default async function SettingsPage() {
+const INVITE_MESSAGES: Record<string, { tone: "good" | "bad"; text: string }> = {
+  added: { tone: "good", text: "Person added. They can sign in now." },
+  pending: { tone: "good", text: "Invite saved. They'll join when they sign in with that email." },
+  exists: { tone: "bad", text: "That person is already in this organization." },
+  invalid: { tone: "bad", text: "Enter a valid email address and pick a role." },
+  failed: { tone: "bad", text: "Couldn't add that person. Please try again." },
+  denied: { tone: "bad", text: "Only admins can add people." },
+};
+
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ invite?: string }>;
+}) {
+  const { invite } = await searchParams;
   const ctx = await requireAppContext();
 
   if (ctx.role !== "admin") {
@@ -51,7 +67,12 @@ export default async function SettingsPage() {
   }
 
   const supabase = await createClient();
-  const [membersRes, sitesRes, termsRes, programsRes, auditRes, thresholds] = await Promise.all([
+  const [invitesRes, membersRes, sitesRes, termsRes, programsRes, auditRes, thresholds] = await Promise.all([
+    supabase
+      .from("org_invites")
+      .select("id, email, role, created_at")
+      .eq("org_id", ctx.orgId)
+      .order("created_at", { ascending: false }),
     supabase
       .from("memberships")
       .select("id, role, status, user_id, profiles(email, full_name)")
@@ -183,6 +204,48 @@ export default async function SettingsPage() {
           </div>
           <span className="card-sub">{members.length} in this organization</span>
         </div>
+
+        {invite && INVITE_MESSAGES[invite] && (
+          <p
+            role="status"
+            className="settings-note"
+            style={{ color: INVITE_MESSAGES[invite].tone === "good" ? "var(--good)" : "var(--crit)", fontWeight: 600 }}
+          >
+            {INVITE_MESSAGES[invite].text}
+          </p>
+        )}
+
+        <form action={addMember} className="inline-add">
+          <input name="email" type="email" required placeholder="name@example.com" aria-label="Email address" />
+          <select name="role" defaultValue="staff" aria-label="Role">
+            <option value="staff">Staff</option>
+            <option value="director">Director</option>
+            <option value="viewer">Viewer</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button className="btn-primary" type="submit">
+            Add person
+          </button>
+        </form>
+
+        {(invitesRes.data ?? []).length > 0 && (
+          <ul className="settings-list" style={{ marginTop: 14 }}>
+            {(invitesRes.data ?? []).map((i) => (
+              <li key={i.id} className="settings-list-row">
+                <span>
+                  {i.email} <span className="settings-muted">· {i.role} · waiting to sign in</span>
+                </span>
+                <form action={revokeInvite}>
+                  <input type="hidden" name="inviteId" value={i.id} />
+                  <button className="link-btn danger" type="submit">
+                    Cancel invite
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+
         <div className="settings-scroll">
           <table className="settings-table">
             <thead>
@@ -244,8 +307,9 @@ export default async function SettingsPage() {
           </table>
         </div>
         <p className="settings-note">
-          New members sign in with a Supabase account, then appear here to be assigned a
-          role. Email invitations are a follow-up (they need the server service-role key).
+          Add someone by email and role. If they already have an account they join straight away;
+          otherwise they join the first time they sign in with that email. We don&rsquo;t send an
+          invitation email yet, so tell them to sign up at the sign-in page.
         </p>
       </section>
 

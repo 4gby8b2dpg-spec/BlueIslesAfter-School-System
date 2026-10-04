@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { claimInvitesForUser } from "@/lib/invites";
 import { signOut, createOrgForSelf } from "./actions";
 import "../login/login.css";
 
@@ -21,6 +22,10 @@ export default async function NoOrgPage({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  // An admin may have invited this email before the person had an account.
+  // Attach them now, so they land straight in the org instead of creating one.
+  await claimInvitesForUser(user.id, user.email ?? null);
 
   // is_org_member() (and therefore the memberships RLS read policy) requires
   // status='active' — an invited-but-not-yet-active row is invisible to the
