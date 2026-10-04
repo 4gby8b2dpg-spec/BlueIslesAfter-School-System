@@ -3,6 +3,8 @@ import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { AppNav } from "@/components/app-nav";
 import { IdleGuard } from "@/components/idle-guard";
+import { needsName } from "@/lib/names";
+import Link from "next/link";
 import "./app.css";
 
 async function signOut() {
@@ -83,7 +85,27 @@ export default async function AppLayout({
       </aside>
 
       <div className="app-main">
-        <div className="app-content">{children}</div>
+        <div className="app-content">
+          {needsName(ctx.fullName, ctx.email) && (
+            <Link
+              href="/account"
+              style={{
+                display: "block",
+                marginBottom: 14,
+                padding: "10px 14px",
+                borderRadius: 12,
+                background: "#fff7ed",
+                border: "1px solid #f6b25a",
+                color: "#7c2d12",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              Add your name so colleagues can see who you are &rarr;
+            </Link>
+          )}
+          {children}
+        </div>
       </div>
     </div>
   );

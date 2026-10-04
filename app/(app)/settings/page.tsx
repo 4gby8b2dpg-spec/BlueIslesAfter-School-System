@@ -21,6 +21,7 @@ import {
   deleteOrg,
   addMember,
   bulkAddMembers,
+  updateMemberName,
   revokeInvite,
 } from "./actions";
 import { CopyField } from "@/components/copy-field";
@@ -81,7 +82,7 @@ export default async function SettingsPage({
   const [invitesRes, membersRes, sitesRes, termsRes, programsRes, auditRes, thresholds] = await Promise.all([
     supabase
       .from("org_invites")
-      .select("id, email, role, created_at")
+      .select("id, email, role, full_name, created_at")
       .eq("org_id", ctx.orgId)
       .order("created_at", { ascending: false }),
     supabase
@@ -227,6 +228,7 @@ export default async function SettingsPage({
         )}
 
         <form action={addMember} className="inline-add">
+          <input name="name" placeholder="Full name (optional)" aria-label="Full name" />
           <input name="email" type="email" required placeholder="name@example.com" aria-label="Email address" />
           <select name="role" defaultValue="staff" aria-label="Role">
             <option value="staff">Staff</option>
@@ -258,7 +260,7 @@ export default async function SettingsPage({
               name="emails"
               required
               rows={6}
-              placeholder={"one email per line, for example:\nname@example.com\nsomeone@example.com director"}
+              placeholder={"one person per line, for example:\nJane Smith | jane@example.com | director\nname@example.com"}
               aria-label="Email addresses, one per line"
               style={{ font: "inherit", padding: 10, borderRadius: 10, border: "1px solid #dfe7e5", resize: "vertical" }}
             />
@@ -282,6 +284,7 @@ export default async function SettingsPage({
             {(invitesRes.data ?? []).map((i) => (
               <li key={i.id} className="settings-list-row">
                 <span>
+                  {i.full_name ? `${i.full_name} · ` : ""}
                   {i.email} <span className="settings-muted">· {i.role} · waiting to sign in</span>
                 </span>
                 <form action={revokeInvite}>
@@ -312,7 +315,20 @@ export default async function SettingsPage({
                 return (
                   <tr key={m.id}>
                     <td>
-                      {m.profiles?.full_name ?? "—"}
+                      <form action={updateMemberName} className="inline-form">
+                        <input type="hidden" name="membershipId" value={m.id} />
+                        <input
+                          name="name"
+                          required
+                          maxLength={120}
+                          defaultValue={m.profiles?.full_name ?? ""}
+                          aria-label={`Name for ${m.profiles?.email ?? "member"}`}
+                          style={{ minWidth: 140 }}
+                        />
+                        <button className="mini-btn" type="submit">
+                          Save
+                        </button>
+                      </form>
                       {isSelf && <span className="you-chip">you</span>}
                     </td>
                     <td className="settings-muted">{m.profiles?.email ?? "—"}</td>

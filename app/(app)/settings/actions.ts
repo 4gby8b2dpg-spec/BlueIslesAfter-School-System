@@ -5,6 +5,7 @@ import { requireAppContext } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPurgeCandidates } from "@/lib/retention";
+import { cleanName, needsName } from "@/lib/names";
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -124,6 +125,30 @@ export async function setMemberStatus(formData: FormData) {
   const supabase = await createClient();
   await supabase.from("memberships").update({ status }).eq("id", membershipId);
   await logAudit(supabase, ctx.orgId, ctx.userId, "update", "memberships", membershipId, null, { status });
+
+  revalidatePath("/settings");
+}
+
+export async function updateMemberName(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  const membershipId = String(formData.get("membershipId") ?? "");
+  const name = cleanName(formData.get("name"));
+  if (!membershipId || !name) return;
+
+  const supabase = await createClient();
+  const { data: membership } = await supabase
+    .from("memberships")
+    .select("user_id, profiles(full_name)")
+    .eq("id", membershipId)
+    .eq("org_id", ctx.orgId)
+    .maybeSingle();
+  if (!membership) return;
+
+  const profile = membership.profiles as unknown as { full_name: string | null } | null;
+  const admin = createAdminClient();
+  await admin.from("profiles").update({ full_name: name }).eq("id", membership.user_id);
+  await logAudit(supabase, ctx.orgId, ctx.userId, "update", "profiles", membership.user_id, { full_name: profile?.full_name ?? null }, { full_name: name });
 
   revalidatePath("/settings");
 }
@@ -491,13 +516,14 @@ async function addOneMember(
   ctx: { orgId: string; userId: string },
   email: string,
   role: string,
+  name: string | null,
 ): Promise<AddResult> {
   const admin = createAdminClient();
   const supabase = await createClient();
 
   const { data: profile } = await admin
     .from("profiles")
-    .select("id")
+    .select("id, full_name")
     .eq("email", email)
     .maybeSingle();
 
@@ -520,12 +546,16 @@ async function addOneMember(
       console.error("[settings] addMember membership insert failed:", error);
       return "failed";
     }
+    // Fill in the name only if they don't have one of their own yet.
+    if (name && needsName(profile.full_name, email)) {
+      await admin.from("profiles").update({ full_name: name }).eq("id", profile.id);
+    }
     await logAudit(supabase, ctx.orgId, ctx.userId, "create", "memberships", null, null, { email, role });
     return "added";
   }
 
   const { error } = await admin.from("org_invites").upsert(
-    { org_id: ctx.orgId, email, role, invited_by: ctx.userId },
+    { org_id: ctx.orgId, email, role, full_name: name, invited_by: ctx.userId },
     { onConflict: "org_id,email" },
   );
   if (error) {
@@ -542,17 +572,19 @@ export async function addMember(formData: FormData) {
 
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const role = String(formData.get("role") ?? "");
+  const name = cleanName(formData.get("name")) || null;
   if (!EMAIL_RE.test(email) || !(ROLES as readonly string[]).includes(role)) {
     redirect("/settings?invite=invalid");
   }
 
-  const result = await addOneMember(ctx, email, role);
+  const result = await addOneMember(ctx, email, role, name);
   revalidatePath("/settings");
   redirect(`/settings?invite=${result}`);
 }
 
-// Paste a list: one email per line (or separated by commas/semicolons).
-// "email role" on a line overrides the default role for that person.
+// Paste a list: one person per line (or separated by commas/semicolons).
+// Each line is "email", "email role", or "name | email | role" (the role is
+// optional and overrides the default for that person).
 const MAX_BULK = 200;
 
 export async function bulkAddMembers(formData: FormData) {
@@ -568,24 +600,39 @@ export async function bulkAddMembers(formData: FormData) {
     .filter(Boolean);
 
   // Keep the first entry for each email, so a repeat in the paste is ignored.
-  const people = new Map<string, string>();
+  const people = new Map<string, { role: string; name: string | null }>();
   const invalid: string[] = [];
   for (const token of tokens) {
-    const [rawEmail, rawRole, extra] = token.split(/\s+/);
+    let name: string | null = null;
+    let rawEmail: string | undefined;
+    let rawRole: string | undefined;
+    let extra: string | undefined;
+    if (token.includes("|")) {
+      const parts = token.split("|").map((p) => p.trim());
+      if (parts.length > 3) {
+        invalid.push(token);
+        continue;
+      }
+      if (parts.length === 3) [name, rawEmail, rawRole] = [parts[0], parts[1], parts[2]];
+      else [name, rawEmail] = [parts[0], parts[1]];
+      name = cleanName(name) || null;
+    } else {
+      [rawEmail, rawRole, extra] = token.split(/\s+/);
+    }
     const email = (rawEmail ?? "").toLowerCase();
     const role = rawRole ? rawRole.toLowerCase() : defaultRole;
     if (!EMAIL_RE.test(email) || extra !== undefined || !(ROLES as readonly string[]).includes(role)) {
       invalid.push(token);
       continue;
     }
-    if (!people.has(email)) people.set(email, role);
+    if (!people.has(email)) people.set(email, { role, name });
   }
 
   if (people.size > MAX_BULK) redirect(`/settings?bulk=too_many&max=${MAX_BULK}`);
 
   const counts: Record<AddResult, number> = { added: 0, pending: 0, exists: 0, failed: 0 };
-  for (const [email, role] of people) {
-    counts[await addOneMember(ctx, email, role)]++;
+  for (const [email, { role, name }] of people) {
+    counts[await addOneMember(ctx, email, role, name)]++;
   }
 
   revalidatePath("/settings");

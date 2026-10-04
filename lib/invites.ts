@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { needsName } from "@/lib/names";
 
 // Attach a signed-in person to every org that invited their email. Runs
 // server-side with the admin client, because the person has no membership
@@ -11,7 +12,7 @@ export async function claimInvitesForUser(userId: string, email: string | null) 
   const admin = createAdminClient();
   const { data: invites, error } = await admin
     .from("org_invites")
-    .select("id, org_id, role")
+    .select("id, org_id, role, full_name")
     .eq("email", email.toLowerCase());
   if (error) {
     console.error("[invites] lookup failed:", error);
@@ -38,5 +39,17 @@ export async function claimInvitesForUser(userId: string, email: string | null) 
       after: { role: invite.role, via: "invite" },
     });
     await admin.from("org_invites").delete().eq("id", invite.id);
+
+    // Take the invited name only if the person hasn't set one of their own.
+    if (invite.full_name) {
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("full_name")
+        .eq("id", userId)
+        .maybeSingle();
+      if (profile && needsName(profile.full_name, email)) {
+        await admin.from("profiles").update({ full_name: invite.full_name }).eq("id", userId);
+      }
+    }
   }
 }
