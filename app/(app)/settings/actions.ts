@@ -6,6 +6,15 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPurgeCandidates } from "@/lib/retention";
 import { cleanName, needsName } from "@/lib/names";
+import {
+  boolText,
+  nameField,
+  parseFields,
+  roleField,
+  shortText,
+  statusField,
+  uuidField,
+} from "@/lib/validate";
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -44,8 +53,9 @@ export async function renameOrg(formData: FormData) {
   const ctx = await requireAdmin();
   if (!ctx) return;
 
-  const name = String(formData.get("name") ?? "").trim().slice(0, 120);
-  if (!name) return;
+  const input = parseFields(formData, { name: nameField });
+  if (!input) return;
+  const name = input.name;
 
   const supabase = await createClient();
   const admin = createAdminClient();
@@ -57,8 +67,22 @@ export async function renameOrg(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
-const LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/svg+xml", "image/webp"]);
+// Raster formats only. SVG is excluded because it can carry script.
+const LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+
+// Decide the type from the file's first bytes, not the name or the type the
+// browser declared. Returns null for anything that isn't a PNG, JPEG or WebP.
+async function sniffLogoType(file: File): Promise<string | null> {
+  const head = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  const text = (from: number, to: number) => String.fromCharCode(...head.slice(from, to));
+  if (head[0] === 0x89 && text(1, 4) === "PNG") return "image/png";
+  if (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) return "image/jpeg";
+  if (text(0, 4) === "RIFF" && text(8, 12) === "WEBP") return "image/webp";
+  return null;
+}
+
+const LOGO_EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
 
 export async function uploadOrgLogo(formData: FormData) {
   const ctx = await requireAdmin();
@@ -66,9 +90,11 @@ export async function uploadOrgLogo(formData: FormData) {
 
   const file = formData.get("logo");
   if (!(file instanceof File) || file.size === 0) return;
-  if (!LOGO_TYPES.has(file.type) || file.size > LOGO_MAX_BYTES) return;
+  if (file.size > LOGO_MAX_BYTES) return;
+  const realType = await sniffLogoType(file);
+  if (!realType || !LOGO_TYPES.has(realType)) return;
 
-  const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+  const ext = LOGO_EXT[realType];
   const path = `${ctx.orgId}/logo.${ext}`;
 
   const supabase = await createClient();
@@ -81,7 +107,7 @@ export async function uploadOrgLogo(formData: FormData) {
 
   const { error: uploadError } = await admin.storage
     .from("org-logos")
-    .upload(path, file, { upsert: true, contentType: file.type });
+    .upload(path, file, { upsert: true, contentType: realType });
   if (uploadError) return;
 
   // Cache-bust so a replaced logo shows immediately instead of the old
@@ -99,9 +125,9 @@ export async function uploadOrgLogo(formData: FormData) {
 export async function updateMemberRole(formData: FormData) {
   const ctx = await requireAdmin();
   if (!ctx) return;
-  const membershipId = String(formData.get("membershipId"));
-  const role = String(formData.get("role"));
-  if (!membershipId || !["admin", "director", "staff", "viewer"].includes(role)) return;
+  const input = parseFields(formData, { membershipId: uuidField, role: roleField });
+  if (!input) return;
+  const { membershipId, role } = input;
 
   const supabase = await createClient();
   const { data: before } = await supabase
@@ -118,9 +144,9 @@ export async function updateMemberRole(formData: FormData) {
 export async function setMemberStatus(formData: FormData) {
   const ctx = await requireAdmin();
   if (!ctx) return;
-  const membershipId = String(formData.get("membershipId"));
-  const status = String(formData.get("status"));
-  if (!membershipId || !["active", "deactivated", "invited"].includes(status)) return;
+  const input = parseFields(formData, { membershipId: uuidField, status: statusField });
+  if (!input) return;
+  const { membershipId, status } = input;
 
   const supabase = await createClient();
   await supabase.from("memberships").update({ status }).eq("id", membershipId);
@@ -132,9 +158,11 @@ export async function setMemberStatus(formData: FormData) {
 export async function updateMemberName(formData: FormData) {
   const ctx = await requireAdmin();
   if (!ctx) return;
-  const membershipId = String(formData.get("membershipId") ?? "");
-  const name = cleanName(formData.get("name"));
-  if (!membershipId || !name) return;
+  const input = parseFields(formData, { membershipId: uuidField, name: nameField });
+  if (!input) return;
+  const { membershipId } = input;
+  const name = cleanName(input.name);
+  if (!name) return;
 
   const supabase = await createClient();
   const { data: membership } = await supabase
@@ -156,8 +184,9 @@ export async function updateMemberName(formData: FormData) {
 export async function addSite(formData: FormData) {
   const ctx = await requireAdmin();
   if (!ctx) return;
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) return;
+  const input = parseFields(formData, { name: shortText });
+  if (!input) return;
+  const name = input.name;
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -174,10 +203,13 @@ export async function addSite(formData: FormData) {
 export async function addTerm(formData: FormData) {
   const ctx = await requireAdmin();
   if (!ctx) return;
-  const name = String(formData.get("name") ?? "").trim();
+  const input = parseFields(formData, { name: shortText });
+  if (!input) return;
+  const name = input.name;
   const startsOn = String(formData.get("startsOn") ?? "") || null;
   const endsOn = String(formData.get("endsOn") ?? "") || null;
-  if (!name) return;
+  const isDate = (v: string | null) => v === null || /^\d{4}-\d{2}-\d{2}$/.test(v);
+  if (!isDate(startsOn) || !isDate(endsOn)) return;
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -198,9 +230,10 @@ export async function addTerm(formData: FormData) {
 export async function toggleSiteActive(formData: FormData) {
   const ctx = await requireAdmin();
   if (!ctx) return;
-  const siteId = String(formData.get("siteId"));
-  const active = String(formData.get("active")) === "true";
-  if (!siteId) return;
+  const input = parseFields(formData, { siteId: uuidField, active: boolText });
+  if (!input) return;
+  const { siteId } = input;
+  const active = input.active === "true";
 
   const supabase = await createClient();
   await supabase.from("sites").update({ is_active: active }).eq("id", siteId).eq("org_id", ctx.orgId);
@@ -211,8 +244,9 @@ export async function toggleSiteActive(formData: FormData) {
 export async function deleteSite(formData: FormData) {
   const ctx = await requireAdmin();
   if (!ctx) return;
-  const siteId = String(formData.get("siteId"));
-  if (!siteId) return;
+  const input = parseFields(formData, { siteId: uuidField });
+  if (!input) return;
+  const { siteId } = input;
 
   const supabase = await createClient();
   // Guard: don't delete a site programs still point at.
@@ -232,8 +266,9 @@ export async function deleteSite(formData: FormData) {
 export async function deleteTerm(formData: FormData) {
   const ctx = await requireAdmin();
   if (!ctx) return;
-  const termId = String(formData.get("termId"));
-  if (!termId) return;
+  const input = parseFields(formData, { termId: uuidField });
+  if (!input) return;
+  const { termId } = input;
 
   const supabase = await createClient();
   const { count } = await supabase

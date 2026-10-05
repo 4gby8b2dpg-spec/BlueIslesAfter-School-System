@@ -35,7 +35,8 @@ export async function GET(
       "Content-Type": "text/calendar; charset=utf-8",
       "Content-Disposition": `inline; filename="blueisles.ics"`,
       // clients re-poll on their own schedule; keep it briefly cacheable
-      "Cache-Control": "public, max-age=900",
+      // private: the URL is the credential, so shared caches must not store it.
+      "Cache-Control": "private, max-age=900",
     },
   });
 }

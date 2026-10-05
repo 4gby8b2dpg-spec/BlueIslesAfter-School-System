@@ -80,8 +80,8 @@ export async function GET(request: Request) {
 }
 
 // Quote anything that could break a CSV row, and neutralise spreadsheet
-// formula injection (cells starting with = + - @).
+// formula injection (cells starting with = + - @, or a tab / carriage return).
 function csvCell(value: string) {
-  const safe = /^[=+\-@]/.test(value) ? `'${value}` : value;
+  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
   return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }

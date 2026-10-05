@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { isPasswordBreached } from "./actions";
 import "../login/login.css";
 
 export default function SignupPage() {
@@ -19,6 +20,11 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
     setBusy(true);
+    if (await isPasswordBreached(password)) {
+      setError("That password has appeared in a known data breach. Please choose a different one.");
+      setBusy(false);
+      return;
+    }
     const supabase = createClient();
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -104,7 +110,7 @@ export default function SignupPage() {
             type="password"
             autoComplete="new-password"
             required
-            minLength={6}
+            minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"

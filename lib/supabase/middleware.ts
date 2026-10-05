@@ -3,18 +3,19 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Routes under here require a signed-in user.
-const PROTECTED_PREFIXES = ["/dashboard"];
-
 // Signed-in app pages end the session after an hour with no requests.
 // The timestamp lives in a session cookie (gone when the browser closes).
 // Public pages (kiosk, survey, registration, marketing) are never signed out.
 const IDLE_MS = 60 * 60 * 1000;
 const ACTIVITY_COOKIE = "bi_active";
+// Default-deny: every route under these prefixes requires a signed-in user.
+// Public pages (marketing, login, signup, kiosk-free registration and survey
+// links, calendar feeds) are not listed, so a new app route is protected
+// automatically.
 const APP_PREFIXES = [
   "/dashboard", "/analytics", "/attendance", "/calendar", "/import",
   "/participants", "/programs", "/recognition", "/registrations", "/reports",
-  "/settings", "/surveys", "/timesheet", "/timetable",
+  "/settings", "/surveys", "/timesheet", "/timetable", "/account", "/kiosk",
 ];
 
 export async function updateSession(request: NextRequest) {
@@ -24,7 +25,13 @@ export async function updateSession(request: NextRequest) {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   // Fail safe: if Supabase env vars aren't configured (e.g. before they're set
   // in the host), skip auth rather than crashing every request (incl. marketing).
-  if (!url || !key) return response;
+  if (!url || !key) {
+    // Never silently run without auth in production.
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set.");
+    }
+    return response;
+  }
 
   const supabase = createServerClient(url, key, {
       cookies: {
@@ -50,7 +57,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const needsAuth = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
+  const needsAuth = APP_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
   if (needsAuth && !user) {
     const url = request.nextUrl.clone();

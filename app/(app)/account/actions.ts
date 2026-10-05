@@ -6,12 +6,15 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAppContext } from "@/lib/auth-context";
 import { cleanName } from "@/lib/names";
+import { nameField, parseFields } from "@/lib/validate";
 
 // A person sets their own name. Only their own profile row is touched; the
 // user id comes from the verified session, never from the form.
 export async function updateOwnName(formData: FormData) {
   const ctx = await requireAppContext();
-  const name = cleanName(formData.get("name"));
+  const input = parseFields(formData, { name: nameField });
+  if (!input) redirect("/account?saved=invalid");
+  const name = cleanName(input.name);
   if (!name) redirect("/account?saved=invalid");
 
   const admin = createAdminClient();

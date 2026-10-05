@@ -5,36 +5,9 @@ import type { NextConfig } from "next";
 // Netlify itself already adds Strict-Transport-Security and
 // X-Content-Type-Options, so they're not duplicated here.
 //
-// Enforced as of 2026-08-13 (was report-only from the Aug 12 security pass).
-// Verified quiet first: a full source-and-rendered-HTML audit of every page
-// (marketing, login, signup, and every app/(app) route) turned up no
-// resource references outside this policy — only same-origin, data:/blob:
-// images, and *.supabase.co; the one external call (Resend, in lib/mailer.ts)
-// is server-side and isn't subject to browser CSP at all. 'unsafe-inline' is
-// required by Next.js inline bootstrapping and styled JSX; there are no
-// external font or script CDNs (fonts are local font-family stacks).
-const isDev = process.env.NODE_ENV !== "production";
-const scriptSrc = isDev
-  ? "'self' 'unsafe-inline' 'unsafe-eval'"
-  : "'self' 'unsafe-inline'";
-
-const csp = [
-  "default-src 'self'",
-  `script-src ${scriptSrc}`,
-  "style-src 'self' 'unsafe-inline'",
-  // https://*.supabase.co: org logos (0020) are served from the public
-  // storage bucket, a different origin than 'self'.
-  "img-src 'self' data: blob: https://*.supabase.co",
-  "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join("; ");
-
+// The Content-Security-Policy is set per request in proxy.ts (nonce-based,
+// see lib/csp.ts), so it is not listed here.
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: csp },
   // frame-ancestors covers modern browsers; this covers the stragglers.
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

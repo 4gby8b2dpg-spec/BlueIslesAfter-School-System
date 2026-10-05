@@ -19,6 +19,10 @@ export default function LoginPage() {
   const [idleNotice] = useState(
     () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("reason") === "idle",
   );
+  // Set when the email confirmation link could not be used (app/auth/callback).
+  const [confirmNotice] = useState(
+    () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("reason") === "confirm",
+  );
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,6 +64,11 @@ export default function LoginPage() {
         {idleNotice && (
           <p className="login-sub" role="status" style={{ color: "#b45309", fontWeight: 600 }}>
             You were signed out after an hour of inactivity.
+          </p>
+        )}
+        {confirmNotice && (
+          <p className="login-sub" role="status" style={{ color: "#b45309", fontWeight: 600 }}>
+            That confirmation link has expired or was already used. Sign in, or ask an admin to resend your invite.
           </p>
         )}
 
