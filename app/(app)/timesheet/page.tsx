@@ -109,6 +109,26 @@ export default async function TimesheetPage({
     });
   }
 
+  // Live: everyone currently clocked in, across all sites. Admins and directors only.
+  let onClock: Entry[] = [];
+  if (canManage) {
+    const { data } = await supabase
+      .from("staff_time_entries")
+      .select(
+        "id, user_id, site_id, clock_in_at, clock_out_at, note, sites(id, name, timezone), profiles(full_name, email)",
+      )
+      .eq("org_id", ctx.orgId)
+      .is("clock_out_at", null)
+      .order("clock_in_at", { ascending: true });
+    onClock = (data ?? []) as Entry[];
+  }
+  const onClockBySite = new Map<string, number>();
+  for (const e of onClock) {
+    const name = one(e.sites)?.name ?? "Unknown site";
+    onClockBySite.set(name, (onClockBySite.get(name) ?? 0) + 1);
+  }
+  const nowIso = new Date().toISOString();
+
   const totals = new Map<string, { name: string; hours: number; open: number }>();
   for (const e of monthEntries) {
     const p = one(e.profiles);
@@ -229,6 +249,54 @@ export default async function TimesheetPage({
 
       {canManage && (
         <>
+          <section className="card">
+            <div className="card-head">
+              <div className="card-title">
+                <span className="spot mint">
+                  <CardIcon name="clock" />
+                </span>
+                <h2>On the clock now</h2>
+              </div>
+              <span className="card-sub">
+                {onClock.length === 0
+                  ? "Nobody is clocked in."
+                  : `${onClock.length} clocked in · ${[...onClockBySite].map(([n, c]) => `${n}: ${c}`).join(" · ")}`}
+              </span>
+            </div>
+
+            {onClock.length === 0 ? (
+              <p className="empty">Nobody is clocked in right now.</p>
+            ) : (
+              <div className="ts-scroll">
+                <table className="ts-table">
+                  <thead>
+                    <tr>
+                      <th>Staff</th>
+                      <th>Site</th>
+                      <th>Clocked in</th>
+                      <th className="right">Hours so far</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {onClock.map((e) => {
+                      const s = one(e.sites);
+                      const p = one(e.profiles);
+                      const tz = s?.timezone ?? "America/New_York";
+                      return (
+                        <tr key={e.id}>
+                          <td>{p?.full_name || p?.email || "Unknown"}</td>
+                          <td>{s?.name ?? "—"}</td>
+                          <td>{formatLocal(e.clock_in_at, tz)}</td>
+                          <td className="right">{hoursBetween(e.clock_in_at, nowIso).toFixed(1)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
           <section className="card">
             <div className="card-head">
               <div className="card-title">

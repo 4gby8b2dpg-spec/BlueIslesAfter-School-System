@@ -167,6 +167,14 @@ export default async function SettingsPage({
         Manage users, sites, terms, and review the audit log.
       </PageHead>
 
+      <p style={{ margin: "0 0 14px" }}>
+        Staff clocked in right now, by site, are on the{" "}
+        <a href="/timesheet" style={{ fontWeight: 600 }}>
+          Timesheet
+        </a>{" "}
+        page under &ldquo;On the clock now.&rdquo;
+      </p>
+
       {/* ORG PROFILE */}
       <section className="card">
         <div className="card-head">
