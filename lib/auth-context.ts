@@ -45,6 +45,10 @@ export async function getAppContext(): Promise<AppContext | null> {
     .select("org_id, role, orgs(name, logo_url), profiles(full_name)")
     .eq("user_id", user.id)
     .eq("status", "active")
+    // A person can belong to more than one organization. Use the one they
+    // used last, falling back to the oldest, so the choice is always the same.
+    .order("last_login_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
   let membership = initialMembership;
@@ -54,6 +58,8 @@ export async function getAppContext(): Promise<AppContext | null> {
       .select("org_id, role, orgs(name), profiles(full_name)")
       .eq("user_id", user.id)
       .eq("status", "active")
+      .order("last_login_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle());
   }
@@ -96,6 +102,10 @@ export async function requireAppContext(): Promise<AppContext> {
     .select("org_id, role, orgs(name, logo_url), profiles(full_name)")
     .eq("user_id", user.id)
     .eq("status", "active")
+    // A person can belong to more than one organization. Use the one they
+    // used last, falling back to the oldest, so the choice is always the same.
+    .order("last_login_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
   let membership = initialMembership;
@@ -105,6 +115,8 @@ export async function requireAppContext(): Promise<AppContext> {
       .select("org_id, role, orgs(name), profiles(full_name)")
       .eq("user_id", user.id)
       .eq("status", "active")
+      .order("last_login_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle());
   }
